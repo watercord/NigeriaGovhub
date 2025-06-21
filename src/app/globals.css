@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-body), sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 150 60% 94%; /* Very light green #E8F8F0 */
+    --foreground: 155 70% 15%; /* Dark green for text on light green bg */
+
+    --card: 150 60% 98%; /* Slightly off-white green, lighter than background */
+    --card-foreground: 155 70% 15%;
+
+    --popover: 150 60% 98%;
+    --popover-foreground: 155 70% 15%;
+
+    --primary: 155 70% 26%; /* Green #13714C */
+    --primary-foreground: 150 60% 98%; /* Very light, for text on primary */
+
+    --secondary: 110 65% 74%; /* Light Green #A3E494 */
+    --secondary-foreground: 155 70% 15%; /* Dark green for text on secondary */
+
+    --muted: 150 50% 88%; /* Lighter shade of background */
+    --muted-foreground: 155 60% 45%; /* Muted green text */
+
+    --accent: 75 20% 63%; /* Muted yellow-green #A8B886 */
+    --accent-foreground: 0 0% 10%; /* Dark color for text on accent */
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 155 50% 70%; /* A lighter shade of primary green */
+    --input: 155 50% 88%; /* Lighter shade for input backgrounds, distinct from card */
+    --ring: 155 70% 26%; /* Primary green for focus rings */
+
+    --radius: 0.5rem;
+
+    /* Chart colors can be adjusted if specific scheme is needed */
+    --chart-1: 155 70% 35%;
+    --chart-2: 110 60% 60%;
+    --chart-3: 75 30% 50%;
+    --chart-4: 155 50% 55%;
+    --chart-5: 110 45% 45%;
+
+    /* Sidebar specific theme variables */
+    --sidebar-background: 150 50% 90%; /* Slightly darker than main background for distinction */
+    --sidebar-foreground: 155 70% 12%; /* Darker green text for sidebar */
+    --sidebar-primary: 155 70% 26%; /* Same as main primary */
+    --sidebar-primary-foreground: 150 60% 98%; /* Same as main primary-foreground */
+    --sidebar-accent: 110 65% 74%; /* Same as main secondary, for accents in sidebar */
+    --sidebar-accent-foreground: 155 70% 15%; /* Dark green text on sidebar accent */
+    --sidebar-border: 155 50% 65%; /* Slightly darker border for sidebar elements */
+    --sidebar-ring: 155 70% 26%; /* Same as main ring */
+  }
+
+  .dark {
+    /* For dark mode, we can invert or use a different scheme if provided */
+    /* Using a desaturated dark green theme for example */
+    --background: 155 20% 10%;
+    --foreground: 150 30% 80%;
+
+    --card: 155 20% 15%;
+    --card-foreground: 150 30% 80%;
+
+    --popover: 155 20% 15%;
+    --popover-foreground: 150 30% 80%;
+
+    --primary: 155 60% 40%; /* Brighter green for dark mode primary */
+    --primary-foreground: 155 20% 95%;
+
+    --secondary: 110 50% 50%; /* Muted light green for dark mode secondary */
+    --secondary-foreground: 155 20% 95%;
+
+    --muted: 155 20% 20%;
+    --muted-foreground: 150 30% 60%;
+
+    --accent: 75 30% 50%; /* Muted yellow-green for dark mode accent */
+    --accent-foreground: 155 20% 95%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 155 20% 25%;
+    --input: 155 20% 22%;
+    --ring: 155 60% 40%;
+
+    --chart-1: 155 60% 50%;
+    --chart-2: 110 50% 60%;
+    --chart-3: 75 40% 50%;
+    --chart-4: 155 50% 60%;
+    --chart-5: 110 40% 50%;
+
+    --sidebar-background: 155 20% 12%;
+    --sidebar-foreground: 150 30% 75%;
+    --sidebar-primary: 155 60% 40%;
+    --sidebar-primary-foreground: 155 20% 95%;
+    --sidebar-accent: 110 50% 50%;
+    --sidebar-accent-foreground: 155 20% 95%;
+    --sidebar-border: 155 20% 20%;
+    --sidebar-ring: 155 60% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Adding subtle hover effects */
+@layer components {
+  .card-hover {
+    @apply transition-all duration-300 ease-in-out;
+  }
+  .card-hover:hover {
+    @apply shadow-lg transform scale-[1.02];
+  }
+  .button-hover {
+    @apply transition-all duration-200 ease-in-out;
+  }
+  .button-hover:hover {
+    @apply brightness-110;
+  }
+}

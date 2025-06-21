@@ -1,0 +1,204 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User and Auth models (for NextAuth.js PrismaAdapter)
+model User {
+  id              String    @id @default(cuid())
+  name            String?
+  email           String?   @unique
+  emailVerified   DateTime? @map("email_verified")
+  image           String?
+  password        String?
+  role            String?   @default("user")
+  accounts        Account[]
+  sessions        Session[]
+  feedback_list   Feedback[] @relation("UserFeedback")
+  bookmarkedProjects BookmarkedProject[] @relation("UserBookmarkedProjects")
+
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+
+// --- App-specific Models ---
+
+model Project {
+  id                  String       @id @default(cuid())
+  title               String       @unique
+  subtitle            String
+  ministry_id         String?
+  state_id            String?
+  status              String       @default("Planned") // e.g., Planned, Ongoing, Completed, On Hold
+  start_date          DateTime     @map("start_date")
+  expected_end_date   DateTime?    @map("expected_end_date")
+  actual_end_date     DateTime?    @map("actual_end_date")
+  description         String       @db.Text
+  images              Json?        // Storing as JSON array of { url, alt }
+  videos              Json?        // Storing as JSON array of { url, title }
+  impact_stats        Json?        // Storing as JSON array of { label, value, icon }
+  budget              Float?
+  expenditure         Float?       // Using Float for monetary values
+  last_updated_at     DateTime     @updatedAt @map("last_updated_at")
+  created_at          DateTime     @default(now()) @map("created_at")
+
+  feedback_list       Feedback[]   @relation("ProjectFeedback")
+  bookmarkedBy        BookmarkedProject[] @relation("ProjectBookmarks")
+  tags                ProjectTag[]
+
+  @@map("projects")
+}
+
+model Tag {
+  id        Int          @id @default(autoincrement())
+  name      String       @unique
+  projects  ProjectTag[]
+
+  @@map("tags")
+}
+
+model ProjectTag {
+  id        Int     @id @default(autoincrement())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId     Int
+
+  @@unique([projectId, tagId])
+  @@map("project_tags")
+}
+
+
+model Feedback {
+  id                String    @id @default(cuid())
+  project_id        String    @map("project_id")
+  user_id           String?   @map("user_id")
+  user_name         String    @map("user_name")
+  comment           String    @db.Text
+  rating            Int?      // e.g., 1-5 stars
+  sentiment_summary String?   @map("sentiment_summary")
+  created_at        DateTime  @default(now()) @map("created_at")
+
+  project Project @relation("ProjectFeedback", fields: [project_id], references: [id], onDelete: Cascade)
+  user    User?   @relation("UserFeedback", fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("feedbacks")
+}
+
+model NewsArticle {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  title         String
+  summary       String    @db.Text
+  imageUrl      String?   @map("image_url")
+  dataAiHint    String?   @map("data_ai_hint")
+  category      String
+  publishedDate DateTime  @map("published_date")
+  content       String    @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("news_articles")
+}
+
+model Service {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  summary     String    @db.Text
+  iconName    String?   @map("icon_name")
+  link        String?
+  category    String
+  imageUrl    String?   @map("image_url")
+  dataAiHint  String?   @map("data_ai_hint")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("services")
+}
+
+model Video {
+  id           String    @id @default(cuid())
+  title        String
+  url          String
+  thumbnailUrl String?   @map("thumbnail_url")
+  dataAiHint   String?   @map("data_ai_hint")
+  description  String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("videos")
+}
+
+model SiteSetting {
+  id              String    @id
+  siteName        String?   @map("site_name")
+  maintenanceMode Boolean   @default(false) @map("maintenance_mode")
+  contactEmail    String?   @map("contact_email")
+  footerMessage   String?   @db.Text @map("footer_message")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+model BookmarkedProject {
+  id         String   @id @default(cuid())
+  user       User     @relation("UserBookmarkedProjects", fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    String   @map("user_id")
+  project    Project  @relation("ProjectBookmarks", fields: [project_id], references: [id], onDelete: Cascade)
+  project_id String   @map("project_id")
+  created_at DateTime @default(now()) @map("created_at")
+
+  @@unique([user_id, project_id])
+  @@map("bookmarked_projects")
+}
