@@ -1,10 +1,10 @@
 
 
-import type { Ministry, State, Project as AppProject, Feedback as AppFeedback, ImpactStat, Video as AppVideo, User as AppUser, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, ProjectFormData, SiteSettings, UserDashboardStats } from '@/types';
+import type { Ministry, State, Project as AppProject, Feedback as AppFeedback, ImpactStat, Video as AppVideo, User as AppUser, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, ProjectFormData, SiteSettings, UserDashboardStats, NewsComment } from '@/types';
 import type * as LucideIcons from 'lucide-react'; // Keep this for type checking
 import { TrendingUp as DefaultIcon, Server as DefaultServiceIcon } from 'lucide-react'; // Import specific icons for default
 import prisma from './prisma';
-import type { Project as PrismaProject, Feedback as PrismaFeedback, User as PrismaUser, NewsArticle as PrismaNewsArticle, Service as PrismaService, Video as PrismaVideo, SiteSetting as PrismaSiteSetting, Prisma, ProjectTag as PrismaProjectTag, Tag as PrismaTag } from '@prisma/client';
+import type { Project as PrismaProject, Feedback as PrismaFeedback, User as PrismaUser, NewsArticle as PrismaNewsArticle, Service as PrismaService, Video as PrismaVideo, SiteSetting as PrismaSiteSetting, Prisma, ProjectTag as PrismaProjectTag, Tag as PrismaTag, NewsComment as PrismaNewsComment } from '@prisma/client';
 
 // --- Mock Data for Ministries and States (These will eventually move to DB) ---
 export const ministries: Ministry[] = [
@@ -95,7 +95,7 @@ const mapPrismaUserToAppUser = (prismaUser: PrismaUser): AppUser => {
 };
 
 // --- Helper function to map Prisma NewsArticle to AppNewsArticle ---
-const mapPrismaNewsToAppNews = (prismaNews: PrismaNewsArticle): AppNewsArticle => {
+const mapPrismaNewsToAppNews = (prismaNews: PrismaNewsArticle): Omit<AppNewsArticle, 'comments' | 'likeCount' | 'isLikedByUser'> => {
   return {
     id: prismaNews.id,
     slug: prismaNews.slug,
@@ -167,11 +167,7 @@ export const getProjectById = async (id: string): Promise<AppProject | null> => 
         feedback_list: {
           orderBy: { created_at: 'desc' },
         },
-        tags: {
-          select: {
-            tag: true
-          }
-        }
+        tags: { select: { tag: true } }
       },
     });
 
@@ -190,7 +186,7 @@ export const getAllProjects = async (): Promise<AppProject[]> => {
         last_updated_at: 'desc',
       },
       include: {
-        tags: { select: { tag: { select: { name: true } } } }
+        tags: { select: { tag: true } }
       }
     });
     return prismaProjects.map(mapPrismaProjectToAppProject);
@@ -391,13 +387,68 @@ export async function getUserProfileFromDb(userId: string): Promise<AppUser | nu
   }
 }
 
+export async function getUserByEmail(email: string): Promise<AppUser | null> {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { email },
+        });
+        return user ? mapPrismaUserToAppUser(user) : null;
+    } catch (error) {
+        console.error(`Error fetching user by email ${email} from DB with Prisma:`, error);
+        return null;
+    }
+}
+
+
 // --- News Data Functions (Prisma Integrated) ---
-export const getNewsArticleBySlug = async (slug: string): Promise<AppNewsArticle | null> => {
+export const getNewsArticleBySlug = async (slug: string, userId?: string): Promise<AppNewsArticle | null> => {
   try {
     const newsArticle = await prisma.newsArticle.findUnique({
       where: { slug },
+      include: {
+        comments: {
+          include: {
+            user: {
+              select: { id: true, name: true, image: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        _count: {
+          select: { likes: true }
+        }
+      }
     });
-    return newsArticle ? mapPrismaNewsToAppNews(newsArticle) : null;
+    if (!newsArticle) return null;
+
+    let isLiked = false;
+    if (userId) {
+      const like = await prisma.newsLike.findUnique({
+        where: {
+          user_id_news_article_id: {
+            user_id: userId,
+            news_article_id: newsArticle.id,
+          },
+        },
+      });
+      isLiked = !!like;
+    }
+
+    return {
+      ...mapPrismaNewsToAppNews(newsArticle),
+      likeCount: newsArticle._count.likes,
+      isLikedByUser: isLiked,
+      comments: newsArticle.comments.map(c => ({
+        id: c.id,
+        content: c.content,
+        createdAt: c.createdAt,
+        user: {
+          id: c.user.id,
+          name: c.user.name,
+          image: c.user.image,
+        }
+      }))
+    };
   } catch (error) {
     console.error(`Error fetching news article by slug "${slug}" with Prisma:`, error);
     return null;
@@ -409,7 +460,15 @@ export const getNewsArticleById = async (id: string): Promise<AppNewsArticle | n
     const newsArticle = await prisma.newsArticle.findUnique({
       where: { id },
     });
-    return newsArticle ? mapPrismaNewsToAppNews(newsArticle) : null;
+    if (!newsArticle) return null;
+
+    // This version doesn't need user-specific data, so it's simpler.
+    return {
+      ...mapPrismaNewsToAppNews(newsArticle),
+      comments: [],
+      likeCount: 0,
+      isLikedByUser: false
+    };
   } catch (error) {
     console.error(`Error fetching news article by ID "${id}" with Prisma:`, error);
     return null;
@@ -423,7 +482,12 @@ export const getAllNewsArticles = async (): Promise<AppNewsArticle[]> => {
         publishedDate: 'desc',
       },
     });
-    return newsArticles.map(mapPrismaNewsToAppNews);
+    return newsArticles.map(article => ({
+      ...mapPrismaNewsToAppNews(article),
+      comments: [],
+      likeCount: 0,
+      isLikedByUser: false
+    }));
   } catch (error) {
     console.error('Error fetching all news articles with Prisma:', error);
     return [];
@@ -441,7 +505,12 @@ export const createNewsArticleInDb = async (newsData: NewsArticleCreationData): 
         dataAiHint: newsData.dataAiHint || null,
       }
     });
-    return mapPrismaNewsToAppNews(newArticle);
+    return {
+      ...mapPrismaNewsToAppNews(newArticle),
+      comments: [],
+      likeCount: 0,
+      isLikedByUser: false
+    };
   } catch (error) {
     console.error('Error creating news article in DB with Prisma:', error);
     throw error;
@@ -463,7 +532,12 @@ export const updateNewsArticleInDb = async (id: string, newsData: Partial<NewsAr
         dataAiHint: dataToUpdate.dataAiHint === '' ? null : dataToUpdate.dataAiHint,
       },
     });
-    return mapPrismaNewsToAppNews(updatedArticle);
+    return {
+      ...mapPrismaNewsToAppNews(updatedArticle),
+      comments: [],
+      likeCount: 0,
+      isLikedByUser: false
+    };
   } catch (error) {
     console.error(`Error updating news article with ID "${id}" in DB with Prisma:`, error);
     throw error;
@@ -720,13 +794,18 @@ export const getUserDashboardStatsFromDb = async (userId: string): Promise<UserD
     where: { user_id: userId, rating: { not: null } },
   });
 
-  const bookmarkedCount = await prisma.bookmarkedProject.count({
+  const bookmarkedProjectsCount = await prisma.bookmarkedProject.count({
+      where: { user_id: userId },
+  });
+
+  const bookmarkedNewsCount = await prisma.bookmarkedNewsArticle.count({
       where: { user_id: userId },
   });
 
   return {
     feedbackSubmitted: feedbackCount,
-    bookmarkedProjects: bookmarkedCount,
+    bookmarkedProjects: bookmarkedProjectsCount,
+    bookmarkedNews: bookmarkedNewsCount,
     averageRating: ratingAgg._avg.rating || 0,
   };
 };
@@ -762,5 +841,91 @@ export const updateUserNameInDb = async (userId: string, name: string): Promise<
     }
 };
 
+// --- News Bookmark Functions ---
+export const getUserBookmarkedNewsFromDb = async (userId: string): Promise<AppNewsArticle[]> => {
+  const bookmarks = await prisma.bookmarkedNewsArticle.findMany({
+    where: { user_id: userId },
+    include: {
+      newsArticle: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
 
+  return bookmarks.map(bookmark => ({
+    ...mapPrismaNewsToAppNews(bookmark.newsArticle),
+    comments: [],
+    likeCount: 0,
+    isLikedByUser: true,
+  }));
+};
 
+export const isNewsArticleBookmarked = async (userId: string, articleId: string): Promise<boolean> => {
+  const bookmark = await prisma.bookmarkedNewsArticle.findUnique({
+    where: {
+      user_id_news_article_id: {
+        user_id: userId,
+        news_article_id: articleId,
+      },
+    },
+  });
+  return !!bookmark;
+};
+
+export const addNewsBookmarkInDb = async (userId: string, articleId: string) => {
+  return prisma.bookmarkedNewsArticle.create({
+    data: {
+      user_id: userId,
+      news_article_id: articleId,
+    },
+  });
+};
+
+export const removeNewsBookmarkInDb = async (userId: string, articleId: string) => {
+  return prisma.bookmarkedNewsArticle.delete({
+    where: {
+      user_id_news_article_id: {
+        user_id: userId,
+        news_article_id: articleId,
+      },
+    },
+  });
+};
+
+// --- News Comments and Likes Functions ---
+export const addNewsCommentToDb = async (articleId: string, userId: string, content: string): Promise<PrismaNewsComment> => {
+  return prisma.newsComment.create({
+    data: {
+      content,
+      news_article_id: articleId,
+      user_id: userId,
+    },
+  });
+};
+
+export const toggleNewsLikeInDb = async (articleId: string, userId: string): Promise<{ liked: boolean }> => {
+  const existingLike = await prisma.newsLike.findUnique({
+    where: {
+      user_id_news_article_id: {
+        user_id: userId,
+        news_article_id: articleId,
+      },
+    },
+  });
+
+  if (existingLike) {
+    await prisma.newsLike.delete({
+      where: { id: existingLike.id },
+    });
+    return { liked: false };
+  } else {
+    await prisma.newsLike.create({
+      data: {
+        user_id: userId,
+        news_article_id: articleId,
+      },
+    });
+    return { liked: true };
+  }
+};

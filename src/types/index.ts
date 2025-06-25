@@ -1,5 +1,5 @@
 
-import type { Project as PrismaProject, NewsArticle as PrismaNewsArticle, Service as PrismaService, Video as PrismaVideo, SiteSetting as PrismaSiteSetting, User as PrismaUser } from '@prisma/client';
+import type { Project as PrismaProject, NewsArticle as PrismaNewsArticle, Service as PrismaService, Video as PrismaVideo, SiteSetting as PrismaSiteSetting, User as PrismaUser, Tag as PrismaTag } from '@prisma/client';
 import type * as LucideIcons from 'lucide-react';
 
 
@@ -83,6 +83,16 @@ export interface User {
   created_at?: string | null;
 }
 
+export interface NewsComment {
+  id: string;
+  content: string;
+  createdAt: Date;
+  user: {
+    id: string;
+    name: string | null;
+    image: string | null;
+  };
+}
 
 export interface NewsArticle {
   id: string;
@@ -96,6 +106,10 @@ export interface NewsArticle {
   content: string;
   createdAt: Date;
   updatedAt: Date;
+  // Populated fields for detail view
+  comments: NewsComment[];
+  likeCount: number;
+  isLikedByUser: boolean;
 }
 
 
@@ -114,132 +128,25 @@ export interface ServiceItem {
   updatedAt: Date;
 }
 
-export interface ProjectFormSchemaRaw {
-  title: (z: any) => any;
-  subtitle: (z: any) => any;
-  ministryId: (z: any) => any;
-  stateId: (z: any) => any;
-  status: (z: any) => any;
-  startDate: (z: any) => any;
-  expectedEndDate: (z: any) => any;
-  description: (z: any) => any;
-  budget: (z: any) => any;
-  expenditure: (z: any) => any;
-  tags: (z: any) => any;
-}
-
-export interface ProjectFormSchemaRawField {
-  (z: any): any;
-}
-
-export interface ProjectFormSchemaRaw {
-  title: ProjectFormSchemaRawField;
-  subtitle: ProjectFormSchemaRawField;
-  ministryId: ProjectFormSchemaRawField;
-  stateId: ProjectFormSchemaRawField;
-  status: ProjectFormSchemaRawField;
-  startDate: ProjectFormSchemaRawField;
-  expectedEndDate: ProjectFormSchemaRawField;
-  description: ProjectFormSchemaRawField;
-  budget: ProjectFormSchemaRawField;
-  expenditure: ProjectFormSchemaRawField;
-  tags: ProjectFormSchemaRawField;
-}
-
-export interface ProjectFormSchemaRawFieldConfig {
-  (z: any): any;
-}
-
-export interface ProjectFormSchemaRawTyped {
-  title: ProjectFormSchemaRawFieldConfig;
-  subtitle: ProjectFormSchemaRawFieldConfig;
-  ministryId: ProjectFormSchemaRawFieldConfig;
-  stateId: ProjectFormSchemaRawFieldConfig;
-  status: ProjectFormSchemaRawFieldConfig;
-  startDate: ProjectFormSchemaRawFieldConfig;
-  expectedEndDate: ProjectFormSchemaRawFieldConfig;
-  description: ProjectFormSchemaRawFieldConfig;
-  budget: ProjectFormSchemaRawFieldConfig;
-  expenditure: ProjectFormSchemaRawFieldConfig;
-  tags: ProjectFormSchemaRawFieldConfig;
-}
-
-export interface ProjectFormSchemaRawFieldConfigTyped {
-  (z: any): any;
-}
-
-export interface ProjectFormSchemaRawTypedWithFields {
-  title: ProjectFormSchemaRawFieldConfigTyped;
-  subtitle: ProjectFormSchemaRawFieldConfigTyped;
-  ministryId: ProjectFormSchemaRawFieldConfigTyped;
-  stateId: ProjectFormSchemaRawFieldConfigTyped;
-  status: ProjectFormSchemaRawFieldConfigTyped;
-  startDate: ProjectFormSchemaRawFieldConfigTyped;
-  expectedEndDate: ProjectFormSchemaRawFieldConfigTyped;
-  description: ProjectFormSchemaRawFieldConfigTyped;
-  budget: ProjectFormSchemaRawFieldConfigTyped;
-  expenditure: ProjectFormSchemaRawFieldConfigTyped;
-  tags: ProjectFormSchemaRawFieldConfigTyped;
-}
-
-export interface ProjectFormSchemaRawFieldConfigTyped {
-  (z: any): any;
-}
-
-export interface ProjectFormSchemaRawTypedWithFields {
-  title: ProjectFormSchemaRawFieldConfigTyped;
-  subtitle: ProjectFormSchemaRawFieldConfigTyped;
-  ministryId: ProjectFormSchemaRawFieldConfigTyped;
-  stateId: ProjectFormSchemaRawFieldConfigTyped;
-  status: ProjectFormSchemaRawFieldConfigTyped;
-  startDate: ProjectFormSchemaRawFieldConfigTyped;
-  expectedEndDate: ProjectFormSchemaRawFieldConfigTyped;
-  description: ProjectFormSchemaRawFieldConfigTyped;
-  budget: ProjectFormSchemaRawFieldConfigTyped;
-  expenditure: ProjectFormSchemaRawFieldConfigTyped;
-  tags: ProjectFormSchemaRawFieldConfigTyped;
-}
-
-export interface ProjectFormSchemaRawFieldConfigTyped {
-  (z: any): any;
-}
-
-export interface ProjectFormSchemaRawTypedWithFields {
-  title: ProjectFormSchemaRawFieldConfigTyped;
-  subtitle: ProjectFormSchemaRawFieldConfigTyped;
-  ministryId: ProjectFormSchemaRawFieldConfigTyped;
-  stateId: ProjectFormSchemaRawFieldConfigTyped;
-  status: ProjectFormSchemaRawFieldConfigTyped;
-  startDate: ProjectFormSchemaRawFieldConfigTyped;
-  expectedEndDate: ProjectFormSchemaRawFieldConfigTyped;
-  description: ProjectFormSchemaRawFieldConfigTyped;
-  budget: ProjectFormSchemaRawFieldConfigTyped;
-  expenditure: ProjectFormSchemaRawFieldConfigTyped;
-  tags: ProjectFormSchemaRawFieldConfigTyped;
-}
-
-export const projectFormSchemaRaw: ProjectFormSchemaRawTypedWithFields = {
-  title: (z: any): any => z.string().min(5, "Title must be at least 5 characters.").max(150),
-  subtitle: (z: any): any => z.string().min(10, "Subtitle must be at least 10 characters.").max(250),
-  ministryId: (z: any): any => z.string().min(1, "Ministry is required."),
-  stateId: (z: any): any => z.string().min(1, "State is required."),
-  status: (z: any): any => z.enum(['Planned', 'Ongoing', 'Completed', 'On Hold']),
-  startDate: (z: any): any => z.date({ required_error: "Start date is required." }),
-  expectedEndDate: (z: any): any => z.date().optional().nullable(),
-  description: (z: any): any => z.string().min(20, "Description must be at least 20 characters."),
-  budget: (z: any): any =>
-  z.preprocess(
-    (val: unknown) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
+export const projectFormSchemaRaw = {
+  title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(150),
+  subtitle: (z: any) => z.string().min(10, "Subtitle must be at least 10 characters.").max(250),
+  ministryId: (z: any) => z.string().min(1, "Ministry is required."),
+  stateId: (z: any) => z.string().min(1, "State is required."),
+  status: (z: any) => z.enum(['Planned', 'Ongoing', 'Completed', 'On Hold']),
+  startDate: (z: any) => z.date({ required_error: "Start date is required." }),
+  expectedEndDate: (z: any) => z.date().optional().nullable(),
+  description: (z: any) => z.string().min(20, "Description must be at least 20 characters."),
+  budget: (z: any) => z.preprocess(
+    (val: any) => (val === "" || val === null || val === undefined) ? undefined : Number(val),
     z.number().positive("Budget must be a positive number.").optional().nullable()
   ),
-  expenditure: (z: any): any =>
-  z.preprocess(
-    (val: unknown) => (val === "" || val === null || val === undefined ? undefined : Number(val)),
+  expenditure: (z: any) => z.preprocess(
+    (val: any) => (val === "" || val === null || val === undefined) ? undefined : Number(val),
     z.number().positive("Expenditure must be a positive number.").optional().nullable()
   ),
-
   // Tags from the form will be a comma-separated string of names
-  tags: (z: any): any => z.string().optional(),
+  tags: (z: any) => z.string().optional(),
 };
 
 export type ProjectFormData = {
@@ -331,7 +238,6 @@ export interface SiteSettings {
 export interface UserDashboardStats {
   feedbackSubmitted: number;
   bookmarkedProjects: number;
+  bookmarkedNews: number;
   averageRating: number;
 }
-
-

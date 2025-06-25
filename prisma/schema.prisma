@@ -1,42 +1,41 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-datasource db {
-  provider     = "mysql"
-  url          = env("DATABASE_URL")
-  relationMode = "prisma"
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// User and Auth models (for NextAuth.js PrismaAdapter)
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// User and Auth models (NextAuth.js)
 model User {
-  id              String    @id @default(cuid())
-  name            String?
-  email           String?   @unique
-  emailVerified   DateTime? @map("email_verified")
-  image           String?
-  password        String?
-  role            String?   @default("user")
-  accounts        Account[]
-  sessions        Session[]
-  feedback_list   Feedback[] @relation("UserFeedback")
-  bookmarkedProjects BookmarkedProject[] @relation("UserBookmarkedProjects")
-
-  created_at DateTime @default(now()) @map("created_at")
-  updated_at DateTime @updatedAt @map("updated_at")
-
-  @@map("users")
+  id                    String                    @id @default(cuid())
+  name                  String?
+  email                 String?                   @unique
+  emailVerified         DateTime?
+  image                 String?
+  password              String?
+  role                  String?                   @default("user") // 'user' or 'admin'
+  created_at            DateTime                  @default(now())
+  updated_at            DateTime                  @updatedAt
+  accounts              Account[]
+  sessions              Session[]
+  feedback_list         Feedback[]
+  bookmarked_projects   BookmarkedProject[]
+  bookmarked_news       BookmarkedNewsArticle[]
+  news_likes            NewsLike[]
+  news_comments         NewsComment[]
 }
 
 model Account {
   id                String  @id @default(cuid())
-  userId            String  @map("user_id")
+  userId            String
   type              String
   provider          String
-  providerAccountId String  @map("provider_account_id")
+  providerAccountId String
   refresh_token     String? @db.Text
   access_token      String? @db.Text
   expires_at        Int?
@@ -48,17 +47,14 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
-  @@map("accounts")
 }
 
 model Session {
   id           String   @id @default(cuid())
-  sessionToken String   @unique @map("session_token")
-  userId       String   @map("user_id")
+  sessionToken String   @unique
+  userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
 }
 
 model VerificationToken {
@@ -67,138 +63,151 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("verification_tokens")
 }
 
 
-// --- App-specific Models ---
-
+// Application-specific models
 model Project {
-  id                  String       @id @default(cuid())
-  title               String       @unique
-  subtitle            String
-  ministry_id         String?
-  state_id            String?
-  status              String       @default("Planned") // e.g., Planned, Ongoing, Completed, On Hold
-  start_date          DateTime     @map("start_date")
-  expected_end_date   DateTime?    @map("expected_end_date")
-  actual_end_date     DateTime?    @map("actual_end_date")
-  description         String       @db.Text
-  images              Json?        // Storing as JSON array of { url, alt }
-  videos              Json?        // Storing as JSON array of { url, title }
-  impact_stats        Json?        // Storing as JSON array of { label, value, icon }
-  budget              Float?
-  expenditure         Float?       // Using Float for monetary values
-  last_updated_at     DateTime     @updatedAt @map("last_updated_at")
-  created_at          DateTime     @default(now()) @map("created_at")
-
-  feedback_list       Feedback[]   @relation("ProjectFeedback")
-  bookmarkedBy        BookmarkedProject[] @relation("ProjectBookmarks")
-  tags                ProjectTag[]
-
-  @@map("projects")
+  id                String       @id @default(cuid())
+  title             String       @unique
+  subtitle          String
+  ministry_id       String
+  state_id          String
+  status            String       @default("Planned") // e.g., Planned, Ongoing, Completed, On Hold
+  start_date        DateTime
+  expected_end_date DateTime?
+  actual_end_date   DateTime?
+  description       String       @db.Text
+  images            Json?        // Store as JSON array of { url: string, alt: string }
+  videos            Json?        // Store as JSON array of Video objects
+  impact_stats      Json?        // Store as JSON array of ImpactStat objects
+  budget            Decimal?     @db.Decimal(15, 2)
+  expenditure       Decimal?     @db.Decimal(15, 2)
+  created_at        DateTime     @default(now())
+  last_updated_at   DateTime     @updatedAt
+  tags              ProjectTag[] @relation("ProjectTags")
+  feedback_list     Feedback[]   @relation("ProjectFeedback")
 }
 
 model Tag {
-  id        Int          @id @default(autoincrement())
-  name      String       @unique
-  projects  ProjectTag[]
-
-  @@map("tags")
+  id       Int          @id @default(autoincrement())
+  name     String       @unique
+  projects ProjectTag[] @relation("ProjectTags")
 }
 
 model ProjectTag {
-  id        Int     @id @default(autoincrement())
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
-  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
   tagId     Int
+  project   Project @relation("ProjectTags", fields: [projectId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation("ProjectTags", fields: [tagId], references: [id], onDelete: Cascade)
 
-  @@unique([projectId, tagId])
-  @@map("project_tags")
+  @@id([projectId, tagId])
 }
-
 
 model Feedback {
   id                String    @id @default(cuid())
-  project_id        String    @map("project_id")
-  user_id           String?   @map("user_id")
-  user_name         String    @map("user_name")
+  project_id        String
+  user_id           String?
+  user_name         String
   comment           String    @db.Text
-  rating            Int?      // e.g., 1-5 stars
-  sentiment_summary String?   @map("sentiment_summary")
-  created_at        DateTime  @default(now()) @map("created_at")
-
-  project Project @relation("ProjectFeedback", fields: [project_id], references: [id], onDelete: Cascade)
-  user    User?   @relation("UserFeedback", fields: [user_id], references: [id], onDelete: SetNull)
-
-  @@map("feedbacks")
+  rating            Int?
+  sentiment_summary String?
+  created_at        DateTime  @default(now())
+  project           Project   @relation("ProjectFeedback", fields: [project_id], references: [id], onDelete: Cascade)
+  user              User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
 }
 
 model NewsArticle {
-  id            String    @id @default(cuid())
-  slug          String    @unique
-  title         String
-  summary       String    @db.Text
-  imageUrl      String?   @map("image_url")
-  dataAiHint    String?   @map("data_ai_hint")
-  category      String
-  publishedDate DateTime  @map("published_date")
-  content       String    @db.Text
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  @@map("news_articles")
+  id              String                  @id @default(cuid())
+  slug            String                  @unique
+  title           String
+  summary         String                  @db.Text
+  imageUrl        String?
+  dataAiHint      String?
+  category        String
+  publishedDate   DateTime
+  content         String                  @db.Text
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  bookmarks       BookmarkedNewsArticle[]
+  likes           NewsLike[]
+  comments        NewsComment[]
 }
 
-model Service {
-  id          String    @id @default(cuid())
-  slug        String    @unique
-  title       String
-  summary     String    @db.Text
-  iconName    String?   @map("icon_name")
-  link        String?
-  category    String
-  imageUrl    String?   @map("image_url")
-  dataAiHint  String?   @map("data_ai_hint")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+model BookmarkedNewsArticle {
+  id              String      @id @default(cuid())
+  user_id         String
+  news_article_id String
+  createdAt       DateTime    @default(now())
+  user            User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  newsArticle     NewsArticle @relation(fields: [news_article_id], references: [id], onDelete: Cascade)
 
-  @@map("services")
-}
-
-model Video {
-  id           String    @id @default(cuid())
-  title        String
-  url          String
-  thumbnailUrl String?   @map("thumbnail_url")
-  dataAiHint   String?   @map("data_ai_hint")
-  description  String?   @db.Text
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
-  @@map("videos")
-}
-
-model SiteSetting {
-  id              String    @id
-  siteName        String?   @map("site_name")
-  maintenanceMode Boolean   @default(false) @map("maintenance_mode")
-  contactEmail    String?   @map("contact_email")
-  footerMessage   String?   @db.Text @map("footer_message")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  @@map("site_settings")
+  @@unique([user_id, news_article_id])
 }
 
 model BookmarkedProject {
   id         String   @id @default(cuid())
-  user       User     @relation("UserBookmarkedProjects", fields: [user_id], references: [id], onDelete: Cascade)
-  user_id    String   @map("user_id")
-  project    Project  @relation("ProjectBookmarks", fields: [project_id], references: [id], onDelete: Cascade)
-  project_id String   @map("project_id")
-  created_at DateTime @default(now()) @map("created_at")
+  user_id    String
+  project_id String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  // No relation back to Project needed, assuming it's a one-way bookmark
 
   @@unique([user_id, project_id])
-  @@map("bookmarked_projects")
+}
+
+model NewsLike {
+    id String @id @default(cuid())
+    user_id String
+    news_article_id String
+    createdAt DateTime @default(now())
+    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    newsArticle NewsArticle @relation(fields: [news_article_id], references: [id], onDelete: Cascade)
+
+    @@unique([user_id, news_article_id])
+}
+
+model NewsComment {
+    id String @id @default(cuid())
+    content String @db.Text
+    user_id String
+    news_article_id String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+    newsArticle NewsArticle @relation(fields: [news_article_id], references: [id], onDelete: Cascade)
+}
+
+model Service {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  title      String
+  summary    String   @db.Text
+  iconName   String?
+  link       String?
+  category   String
+  imageUrl   String?
+  dataAiHint String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Video {
+  id           String   @id @default(cuid())
+  title        String
+  url          String
+  thumbnailUrl String?
+  dataAiHint   String?
+  description  String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SiteSetting {
+  id              String    @id @default("global_settings")
+  siteName        String?
+  maintenanceMode Boolean   @default(false)
+  contactEmail    String?
+  footerMessage   String?   @db.Text
+  updatedAt       DateTime  @updatedAt
 }

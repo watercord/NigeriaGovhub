@@ -41,10 +41,10 @@
     "ministry_info": "Ministry of Information & National Orientation",
     "address": "Federal Secretariat, Abuja, Nigeria.",
     "copyright": "© {year} NigeriaGovHub. All rights reserved.",
-    "initiative": "independently run civic-tech platform.."
+    "initiative": "A Federal Government of Nigeria Initiative."
   },
   "home_page": {
-    "hero_title": "Connecting Nigerians to Government Services",
+    "hero_title": "See What Nigeria is Building",
     "hero_subtitle": "Discover transparent insights into government projects and initiatives across all sectors. Track progress, understand impact, and engage with a new era of governance.",
     "search_placeholder": "Search for projects like 'Lagos-Ibadan Expressway'...",
     "search_button": "Search",
@@ -99,6 +99,7 @@
     "overview": "Overview",
     "profile_settings": "Profile Settings",
     "my_feedback": "My Feedback",
+    "bookmarked_news": "Bookmarked News",
     "admin_tools": "Admin Tools",
     "admin_overview": "Admin Overview",
     "manage_users": "Manage Users",
@@ -117,6 +118,8 @@
     "feedback_description": "Total comments and ratings you've provided.",
     "bookmarked_projects": "Bookmarked Projects",
     "bookmarked_description": "Projects you are actively tracking.",
+    "bookmarked_news": "Bookmarked News",
+    "bookmarked_news_description": "News articles you have saved for later.",
     "average_rating": "Average Rating Given",
     "average_rating_description": "Your average project rating.",
     "quick_actions": "Quick Actions",
@@ -126,5 +129,10 @@
     "view_my_feedback_description": "Review all the feedback you have submitted.",
     "explore_projects": "Explore Projects",
     "explore_projects_description": "Discover new projects and initiatives."
+  },
+  "news_article_page": {
+    "comments_title": "Comments",
+    "login_to_comment": "You must be logged in to leave a comment.",
+    "login_button": "Log In or Sign Up"
   }
 }

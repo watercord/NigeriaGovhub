@@ -3,16 +3,24 @@ import { getNewsArticleBySlug } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { CalendarDays, Tag, ArrowLeft } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CalendarDays, Tag, ArrowLeft, Bookmark, MessageSquare } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { NewsArticle } from '@/types';
+import { BookmarkButton } from '@/components/news/bookmark-button';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { Separator } from '@/components/ui/separator';
+import { LikeButton } from '@/components/news/like-button';
+import { CommentForm } from '@/components/news/comment-form';
+import { CommentList } from '@/components/news/comment-list';
 
-// This page remains a Server Component
+// This component remains a Server Component
 export default async function NewsArticlePage({ params }: { params: { slug: string } }) {
-  const article: NewsArticle | null = await getNewsArticleBySlug(params.slug);
+  const session = await getServerSession(authOptions);
+  const article = await getNewsArticleBySlug(params.slug, session?.user?.id);
 
   if (!article) {
     notFound();
@@ -36,7 +44,7 @@ export default async function NewsArticlePage({ params }: { params: { slug: stri
           </div>
         )}
         <CardHeader>
-          <CardTitle className="font-headline text-3xl md:text-4xl text-primary">{article.title}</CardTitle>
+          <CardTitle className="font-headline text-3xl md:text-4xl text-primary flex-1">{article.title}</CardTitle>
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground mt-2">
             <div className="flex items-center">
               <CalendarDays className="h-4 w-4 mr-1.5" />
@@ -54,16 +62,38 @@ export default async function NewsArticlePage({ params }: { params: { slug: stri
             dangerouslySetInnerHTML={{ __html: article.content }}
           />
         </CardContent>
+        <CardFooter className="flex justify-between items-center border-t pt-4">
+            <LikeButton
+                articleId={article.id}
+                initialIsLiked={article.isLikedByUser}
+                initialLikeCount={article.likeCount}
+            />
+             {session?.user && <BookmarkButton articleId={article.id} />}
+        </CardFooter>
       </Card>
+
+      <Separator />
+
+      <section id="comments-section" className="space-y-6">
+        <h2 className="font-headline text-2xl font-bold text-foreground flex items-center">
+            <MessageSquare className="h-6 w-6 mr-3 text-primary" /> Comments ({article.comments.length})
+        </h2>
+
+        {session?.user ? (
+            <CommentForm articleId={article.id} />
+        ) : (
+            <Card className="text-center p-6">
+                <p className="text-muted-foreground">You must be logged in to leave a comment.</p>
+                <Button asChild variant="link" className="mt-2">
+                    <Link href={`/login?redirect=/news/${article.slug}`}>
+                        Log In or Sign Up
+                    </Link>
+                </Button>
+            </Card>
+        )}
+
+        <CommentList comments={article.comments} />
+      </section>
     </div>
   );
 }
-
-// Optional: For full static site generation, you could generate params.
-// For dynamic fetching (SSR or ISR with revalidation), this is not strictly needed.
-// export async function generateStaticParams() {
-//   const news = await getAllNewsArticles(); // Ensure this is async
-//   return news.map((article) => ({
-//     slug: article.slug,
-//   }));
-// }

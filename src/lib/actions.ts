@@ -31,9 +31,16 @@ import {
   deleteVideoFromDb,
   getSiteSettingsFromDb,
   updateSiteSettingsInDb,
-  getUserDashboardStatsFromDb, // New import
-  getUserFeedbackFromDb,     // New import
-  updateUserNameInDb,        // New import
+  getUserDashboardStatsFromDb,
+  getUserFeedbackFromDb,
+  updateUserNameInDb,
+  addNewsBookmarkInDb,
+  removeNewsBookmarkInDb,
+  isNewsArticleBookmarked,
+  getUserBookmarkedNewsFromDb,
+  addNewsCommentToDb,
+  toggleNewsLikeInDb,
+  getUserByEmail,
 } from './data';
 import type { Feedback as AppFeedback, User as AppUser, Project as AppProject, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, Video as AppVideo, NewsArticleFormData, ProjectFormData, ServiceFormData, VideoFormData, SiteSettings, UserDashboardStats } from '@/types';
 import type { SiteSettingsFormData } from '@/app/dashboard/admin/site-settings/page';
@@ -41,6 +48,8 @@ import prisma from './prisma';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { createVerificationToken, getVerificationTokenByToken } from './verification-token';
+import { sendVerificationEmail } from './mail';
 
 
 export interface SubmitFeedbackResult {
@@ -153,8 +162,7 @@ export async function addProject(
       status: formData.status,
       start_date: formData.startDate,
       expected_end_date: formData.expectedEndDate ?? null,
-      actual_end_date: null, // Add this line to satisfy ProjectCreationData
-      description: formData.description,
+      description: formData.description ?? null,
       budget: formData.budget ?? null,
       expenditure: formData.expenditure ?? null,
       tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
@@ -199,8 +207,8 @@ export async function updateProject(
       start_date: formData.startDate,
       expected_end_date: formData.expectedEndDate,
       description: formData.description,
-      budget: formData.budget,
-      expenditure: formData.expenditure,
+      budget: formData.budget ?? null,
+      expenditure: formData.expenditure ?? null,
       tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
     };
 
@@ -618,7 +626,6 @@ export async function updateSiteSettingsAction(
 interface CreateUserResult {
   success: boolean;
   message: string;
-  user?: AppUser | null;
 }
 
 export async function createUserAction(data: { name: string; email: string; password?: string }): Promise<CreateUserResult> {
@@ -638,7 +645,7 @@ export async function createUserAction(data: { name: string; email: string; pass
       return { success: false, message: "Password is required for credentials signup." };
     }
 
-    const newUser = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name: data.name,
         email: data.email,
@@ -646,18 +653,10 @@ export async function createUserAction(data: { name: string; email: string; pass
       },
     });
 
-    const appUser: AppUser = {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        emailVerified: newUser.emailVerified,
-        image: newUser.image,
-        role: newUser.role as AppUser['role'] | null,
-        created_at: newUser.created_at ? newUser.created_at.toISOString() : null,
-    };
+    const verificationToken = await createVerificationToken(data.email);
+    await sendVerificationEmail(verificationToken.email, verificationToken.token);
 
-
-    return { success: true, message: "User created successfully.", user: appUser };
+    return { success: true, message: "Verification email sent! Please check your inbox." };
   } catch (error) {
     console.error("Error creating user:", error);
     let errorMessage = "An unexpected error occurred during user creation.";
@@ -671,6 +670,41 @@ export async function createUserAction(data: { name: string; email: string; pass
     return { success: false, message: errorMessage };
   }
 }
+
+export async function newVerificationAction(token: string): Promise<{ success?: string; error?: string }> {
+  const existingToken = await getVerificationTokenByToken(token);
+
+  if (!existingToken) {
+      return { error: "Token does not exist!" };
+  }
+
+  const hasExpired = new Date(existingToken.expires) < new Date();
+
+  if (hasExpired) {
+      return { error: "Token has expired!" };
+  }
+
+  const existingUser = await getUserByEmail(existingToken.email);
+
+  if (!existingUser) {
+      return { error: "Email does not exist!" };
+  }
+
+  await prisma.user.update({
+      where: { id: existingUser.id },
+      data: {
+          emailVerified: new Date(),
+          email: existingToken.email,
+      }
+  });
+
+  await prisma.verificationToken.delete({
+      where: { id: existingToken.id }
+  });
+
+  return { success: "Email verified successfully!" };
+}
+
 
 // --- Server Actions for Fetching Data for Admin Pages ---
 export async function fetchAllNewsArticlesAction(): Promise<AppNewsArticle[]> {
@@ -733,6 +767,7 @@ export async function getUserDashboardStatsAction(): Promise<UserDashboardStats>
     return {
       feedbackSubmitted: 0,
       bookmarkedProjects: 0,
+      bookmarkedNews: 0,
       averageRating: 0,
     };
   }
@@ -768,6 +803,102 @@ export async function updateUserNameAction(newName: string): Promise<{ success: 
     return { success: true, message: "Name updated successfully." };
   } catch (error) {
     console.error("Error updating user name:", error);
+    return { success: false, message: "An unexpected error occurred." };
+  }
+}
+
+export async function getUserBookmarkedNewsAction(): Promise<AppNewsArticle[]> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated");
+  }
+  try {
+    return await getUserBookmarkedNewsFromDb(session.user.id);
+  } catch (error) {
+    console.error("Error getting user bookmarked news:", error);
+    return [];
+  }
+}
+
+export async function checkNewsBookmarkStatusAction(articleId: string): Promise<boolean> {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+        return false;
+    }
+    return await isNewsArticleBookmarked(session.user.id, articleId);
+}
+
+export async function toggleNewsBookmarkAction(articleId: string): Promise<{ success: boolean; message: string; }> {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+        return { success: false, message: "You must be logged in to bookmark articles." };
+    }
+
+    try {
+        const isBookmarked = await isNewsArticleBookmarked(session.user.id, articleId);
+
+        if (isBookmarked) {
+            await removeNewsBookmarkInDb(session.user.id, articleId);
+            revalidatePath(`/dashboard/user/bookmarked-news`);
+            revalidatePath(`/dashboard/user`);
+            return { success: true, message: "Article removed from bookmarks." };
+        } else {
+            await addNewsBookmarkInDb(session.user.id, articleId);
+            revalidatePath(`/dashboard/user/bookmarked-news`);
+            revalidatePath(`/dashboard/user`);
+            return { success: true, message: "Article added to bookmarks." };
+        }
+    } catch (error) {
+        console.error("Error toggling news bookmark:", error);
+        return { success: false, message: "An unexpected error occurred." };
+    }
+}
+
+
+// --- NEW Server Actions for News Comments and Likes ---
+
+export async function addNewsCommentAction(articleId: string, content: string): Promise<{ success: boolean; message: string; }> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, message: "You must be logged in to comment." };
+  }
+
+  if (!content || content.trim().length < 3) {
+    return { success: false, message: "Comment must be at least 3 characters long." };
+  }
+
+  try {
+    await addNewsCommentToDb(articleId, session.user.id, content);
+
+    const article = await prisma.newsArticle.findUnique({ where: { id: articleId }, select: { slug: true } });
+    if (article) {
+      revalidatePath(`/news/${article.slug}`);
+    }
+
+    return { success: true, message: "Comment added." };
+  } catch (error) {
+    console.error("Error adding news comment:", error);
+    return { success: false, message: "An unexpected error occurred." };
+  }
+}
+
+export async function toggleNewsLikeAction(articleId: string): Promise<{ success: boolean; message: string; }> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, message: "You must be logged in to like articles." };
+  }
+
+  try {
+    await toggleNewsLikeInDb(articleId, session.user.id);
+
+    const article = await prisma.newsArticle.findUnique({ where: { id: articleId }, select: { slug: true } });
+    if (article) {
+      revalidatePath(`/news/${article.slug}`);
+    }
+
+    return { success: true, message: "Like status updated." };
+  } catch (error) {
+    console.error("Error toggling news like:", error);
     return { success: false, message: "An unexpected error occurred." };
   }
 }

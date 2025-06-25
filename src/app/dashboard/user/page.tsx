@@ -4,7 +4,7 @@
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, MessageSquare, Settings, Star, Loader2 } from "lucide-react";
+import { FileText, MessageSquare, Settings, Star, Bookmark, Loader2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,7 @@ export default function UserDashboardPage() {
           setStats({
             feedbackSubmitted: 0,
             bookmarkedProjects: 0,
+            bookmarkedNews: 0,
             averageRating: 0,
           });
         });
@@ -88,38 +89,54 @@ export default function UserDashboardPage() {
         </CardHeader>
       </Card>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <Card className="card-hover shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t.feedback_submitted}</CardTitle>
-            <MessageSquare className="h-5 w-5 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.feedbackSubmitted}</div>
-            <p className="text-xs text-muted-foreground">
-              {t.feedback_description}
-            </p>
-          </CardContent>
-        </Card>
-         <Card className="card-hover shadow-md">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Link href="/dashboard/user/feedback" className="block h-full">
+            <Card className="card-hover shadow-md h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t.feedback_submitted}</CardTitle>
+                <MessageSquare className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{stats?.feedbackSubmitted ?? 0}</div>
+                <p className="text-xs text-muted-foreground">
+                {t.feedback_description}
+                </p>
+            </CardContent>
+            </Card>
+        </Link>
+         <Card className="card-hover shadow-md h-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t.bookmarked_projects}</CardTitle>
             <Star className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.bookmarkedProjects}</div>
+            <div className="text-2xl font-bold">{stats?.bookmarkedProjects ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               {t.bookmarked_description}
             </p>
           </CardContent>
         </Card>
-         <Card className="card-hover shadow-md">
+         <Link href="/dashboard/user/bookmarked-news" className="block h-full">
+            <Card className="card-hover shadow-md h-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{t.bookmarked_news}</CardTitle>
+                <Bookmark className="h-5 w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{stats?.bookmarkedNews ?? 0}</div>
+                <p className="text-xs text-muted-foreground">
+                {t.bookmarked_news_description}
+                </p>
+            </CardContent>
+            </Card>
+         </Link>
+         <Card className="card-hover shadow-md h-full">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t.average_rating}</CardTitle>
             <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.averageRating.toFixed(1)} / 5</div>
+            <div className="text-2xl font-bold">{(stats?.averageRating ?? 0).toFixed(1)} / 5</div>
             <p className="text-xs text-muted-foreground">
              {t.average_rating_description}
             </p>

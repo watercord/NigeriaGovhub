@@ -6,6 +6,7 @@ import { ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/language-context';
+import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 export default function SignupPage() {
@@ -27,7 +28,9 @@ export default function SignupPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <Suspense fallback={<div className="text-center text-muted-foreground">Preparing signup form...</div>}>
             <SignupForm />
+            </Suspense>
             <p className="mt-6 text-center text-sm text-muted-foreground">
               {t.has_account}{' '}
               <Button variant="link" asChild className="p-0 font-medium text-primary hover:text-primary/80">

@@ -34,6 +34,7 @@ import {
   MessageSquare,
   PlayCircleIcon,
   Loader2,
+  Bookmark,
 } from "lucide-react";
 import React, { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -63,6 +64,7 @@ const DashboardSidebarContent = () => {
     { href: "/dashboard/user", label: t.overview, icon: LayoutDashboard },
     { href: "/dashboard/user/profile", label: t.profile_settings, icon: Settings },
     { href: "/dashboard/user/feedback", label: t.my_feedback, icon: FileText },
+    { href: "/dashboard/user/bookmarked-news", label: t.bookmarked_news, icon: Bookmark },
   ];
 
   const adminLinks = [

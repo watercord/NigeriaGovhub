@@ -3,6 +3,7 @@
 import { LoginForm } from '@/components/auth/login-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldCheck } from 'lucide-react';
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/context/language-context';
@@ -28,7 +29,9 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <LoginForm />
+            <Suspense fallback={<div>Loading form...</div>}>
+              <LoginForm />
+            </Suspense>
             <p className="mt-6 text-center text-sm text-muted-foreground">
               {t.no_account}{' '}
               <Button variant="link" asChild className="p-0 font-medium text-primary hover:text-primary/80">
