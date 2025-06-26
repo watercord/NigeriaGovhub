@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from 'react-hook-form';
@@ -7,11 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createUserAction } from '@/lib/actions';
 import { signIn } from 'next-auth/react';
 import { useLanguage } from '@/context/language-context';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { CheckCircle, AlertTriangle } from 'lucide-react';
+import { PasswordInput } from '../common/password-input';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -27,54 +31,40 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export function SignupForm() {
   const { toast } = useToast();
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const [isLoadingCredentials, setIsLoadingCredentials] = useState(false);
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
   const { dictionary } = useLanguage();
   const t = dictionary.signup_page;
 
-  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormData>({
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
   });
 
   const onSubmit: SubmitHandler<SignupFormData> = async (formData) => {
     setIsLoadingCredentials(true);
-    
+    setError("");
+    setSuccess("");
+
     const result = await createUserAction({
       name: formData.name,
       email: formData.email,
       password: formData.password,
     });
 
-    if (result.success && result.user) {
+    if (result.success) {
+      setSuccess(result.message);
       toast({
         title: "Account Created",
-        description: "Your account has been successfully created. Logging you in...",
+        description: result.message,
       });
-
-      const signInResult = await signIn('credentials', {
-        redirect: false,
-        email: formData.email,
-        password: formData.password,
-      });
-
-      if (signInResult?.error) {
-        toast({
-          title: "Login Failed After Signup",
-          description: signInResult.error || "Could not log you in automatically. Please try logging in manually.",
-          variant: "destructive",
-        });
-        router.push('/login');
-      } else if (signInResult?.ok) {
-        const redirectUrl = searchParams.get('redirect') || '/dashboard/user';
-        router.push(redirectUrl);
-        router.refresh(); 
-      }
+      reset();
     } else {
+      setError(result.message || "Could not create your account. Please try again.");
       toast({
         title: "Signup Failed",
-        description: result.message || "Could not create your account. Please try again.",
+        description: result.message || "An error occurred.",
         variant: "destructive",
       });
     }
@@ -83,17 +73,16 @@ export function SignupForm() {
 
   const handleGoogleSignUp = async () => {
     setIsLoadingGoogle(true);
-    const redirectUrl = searchParams.get('redirect') || '/dashboard/user';
-    await signIn('google', { callbackUrl: redirectUrl });
+    await signIn('google', { callbackUrl: '/dashboard/user' });
   };
 
   const overallLoading = isLoadingCredentials || isLoadingGoogle;
 
   return (
     <div className="space-y-6">
-      <Button 
-        variant="outline" 
-        className="w-full button-hover" 
+      <Button
+        variant="outline"
+        className="w-full button-hover"
         onClick={handleGoogleSignUp}
         disabled={overallLoading}
       >
@@ -126,6 +115,7 @@ export function SignupForm() {
             {...register("name")}
             className="mt-1"
             aria-invalid={errors.name ? "true" : "false"}
+            disabled={overallLoading}
           />
           {errors.name && <p className="text-sm text-destructive mt-1">{errors.name.message}</p>}
         </div>
@@ -139,35 +129,51 @@ export function SignupForm() {
             {...register("email")}
             className="mt-1"
             aria-invalid={errors.email ? "true" : "false"}
+            disabled={overallLoading}
           />
           {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
         </div>
 
         <div>
           <Label htmlFor="password">{t.password_label}</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             {...register("password")}
             className="mt-1"
             aria-invalid={errors.password ? "true" : "false"}
+            disabled={overallLoading}
           />
           {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
         </div>
 
         <div>
           <Label htmlFor="confirmPassword">{t.confirm_password_label}</Label>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
             {...register("confirmPassword")}
             className="mt-1"
             aria-invalid={errors.confirmPassword ? "true" : "false"}
+            disabled={overallLoading}
           />
           {errors.confirmPassword && <p className="text-sm text-destructive mt-1">{errors.confirmPassword.message}</p>}
         </div>
+
+        {error && (
+            <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )}
+        {success && (
+            <Alert variant="default" className="bg-emerald-500/15 border-emerald-500 text-emerald-700">
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Success</AlertTitle>
+                <AlertDescription>{success}</AlertDescription>
+            </Alert>
+        )}
 
         <Button type="submit" className="w-full button-hover" disabled={overallLoading}>
           {isLoadingCredentials ? t.creating_account : t.signup_button}

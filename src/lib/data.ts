@@ -1,10 +1,11 @@
 
-
 import type { Ministry, State, Project as AppProject, Feedback as AppFeedback, ImpactStat, Video as AppVideo, User as AppUser, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, ProjectFormData, SiteSettings, UserDashboardStats, NewsComment } from '@/types';
 import type * as LucideIcons from 'lucide-react'; // Keep this for type checking
 import { TrendingUp as DefaultIcon, Server as DefaultServiceIcon } from 'lucide-react'; // Import specific icons for default
 import prisma from './prisma';
-import type { Project as PrismaProject, Feedback as PrismaFeedback, User as PrismaUser, NewsArticle as PrismaNewsArticle, Service as PrismaService, Video as PrismaVideo, SiteSetting as PrismaSiteSetting, Prisma, ProjectTag as PrismaProjectTag, Tag as PrismaTag, NewsComment as PrismaNewsComment } from '@prisma/client';
+import { v4 as uuid } from 'uuid';
+import type { project as PrismaProject, Feedback as PrismaFeedback, user as PrismaUser, newsarticle as PrismaNewsArticle, service as PrismaService, video as PrismaVideo, sitesetting as PrismaSiteSetting, Prisma, projecttag as PrismaProjectTag, tag as PrismaTag, newscomment as PrismaNewsComment } from '@prisma/client';
+
 
 // --- Mock Data for Ministries and States (These will eventually move to DB) ---
 export const ministries: Ministry[] = [
@@ -30,7 +31,7 @@ export const states: State[] = [
 
 
 // --- Helper function to map Prisma Project to AppProject ---
-const mapPrismaProjectToAppProject = (prismaProject: PrismaProject & { feedback_list?: PrismaFeedback[], tags?: { tag: PrismaTag }[] }): AppProject => {
+const mapPrismaProjectToAppProject = (prismaProject: PrismaProject & { feedback_list?: PrismaFeedback[], projecttag?: { tag: PrismaTag }[] }): AppProject => {
   const ministry = ministries.find(m => m.id === prismaProject.ministry_id) || { id: prismaProject.ministry_id || 'unknown_ministry', name: prismaProject.ministry_id || 'Unknown Ministry' };
   const state = states.find(s => s.id === prismaProject.state_id) || { id: prismaProject.state_id || 'unknown_state', name: prismaProject.state_id || 'Unknown State' };
 
@@ -40,8 +41,7 @@ const mapPrismaProjectToAppProject = (prismaProject: PrismaProject & { feedback_
     return { ...stat, icon: IconComponent };
   });
 
-  const appProjectTags = prismaProject.tags?.map(pt => pt.tag.name) || [];
-
+   const appProjectTags = prismaProject.projecttag?.map(pt => pt.tag.name) || [];
 
   return {
     id: prismaProject.id,
@@ -167,7 +167,7 @@ export const getProjectById = async (id: string): Promise<AppProject | null> => 
         feedback_list: {
           orderBy: { created_at: 'desc' },
         },
-        tags: { select: { tag: true } }
+        projecttags: { select: { tag: true } }
       },
     });
 
@@ -186,7 +186,7 @@ export const getAllProjects = async (): Promise<AppProject[]> => {
         last_updated_at: 'desc',
       },
       include: {
-        tags: { select: { tag: true } }
+        projecttags: { select: { tag: true } }
       }
     });
     return prismaProjects.map(mapPrismaProjectToAppProject);
@@ -206,16 +206,17 @@ export type ProjectCreationData = Omit<PrismaProject, 'id' | 'created_at' | 'las
 export const createProjectInDb = async (projectData: ProjectCreationData): Promise<AppProject | null> => {
   try {
     const tagOperations = projectData.tags?.map(tagName => ({
-        tag: {
-            connectOrCreate: {
-                where: { name: tagName },
-                create: { name: tagName }
-            }
+      tag: {
+        connectOrCreate: {
+          where: { name: tagName },
+          create: { name: tagName }
         }
+      }
     }));
 
     const newProject = await prisma.project.create({
       data: {
+        id: uuid(), // Generate an ID if your DB doesn't auto-generate
         title: projectData.title,
         subtitle: projectData.subtitle,
         ministry_id: projectData.ministry_id,
@@ -229,16 +230,24 @@ export const createProjectInDb = async (projectData: ProjectCreationData): Promi
         images: projectData.images || [],
         videos: projectData.videos || [],
         impact_stats: projectData.impact_stats || [],
-        ...(tagOperations && tagOperations.length > 0 && {
-            tags: {
-                create: tagOperations
+        last_updated_at: new Date(),
+        created_at: new Date(),
+        projecttags: tagOperations && tagOperations.length > 0 ? {
+          create: tagOperations.map(tagOp => ({
+            tag: {
+              connectOrCreate: {
+                where: { name: (tagOp.tag.connectOrCreate.where as { name: string }).name },
+                create: { name: (tagOp.tag.connectOrCreate.create as { name: string }).name }
+              }
             }
-        })
+          }))
+        } : undefined
       },
       include: {
-        tags: { select: { tag: true } }
+        projecttags: { select: { tag: true } }
       }
     });
+
     return mapPrismaProjectToAppProject(newProject);
   } catch (error) {
     console.error('Error creating project in DB with Prisma:', error);
@@ -250,7 +259,7 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
     try {
         const { tags, ...scalarData } = projectData;
 
-        const baseUpdateData: Prisma.ProjectUpdateInput = {
+        const baseUpdateData: Prisma.projectUpdateInput = {
             ...scalarData,
             start_date: scalarData.start_date ? new Date(scalarData.start_date) : undefined,
             expected_end_date: scalarData.expected_end_date === null ? null : (scalarData.expected_end_date ? new Date(scalarData.expected_end_date) : undefined),
@@ -259,7 +268,7 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
         };
 
         if (tags !== undefined) {
-            baseUpdateData.tags = {
+            baseUpdateData.projecttags = {
                 deleteMany: {}, // Delete all existing relations first
                 create: tags.map(tagName => ({
                     tag: {
@@ -276,7 +285,7 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
             where: { id },
             data: baseUpdateData,
             include: {
-                tags: { select: { tag: true } },
+                projecttags: { select: { tag: true } },
                 feedback_list: { orderBy: { created_at: 'desc' } },
             },
         });
@@ -290,8 +299,8 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
 
 export const deleteProjectFromDb = async (id: string): Promise<boolean> => {
   try {
-    await prisma.projectTag.deleteMany({ where: { projectId: id }});
-    await prisma.feedback.deleteMany({ where: { project_id: id } });
+    await prisma.projecttags.deleteMany({ where: { projectId: id }});
+    await prisma.Feedback.deleteMany({ where: { project_id: id } });
     await prisma.project.delete({ where: { id } });
     return true;
   } catch (error) {
@@ -307,7 +316,7 @@ export const addFeedbackToProject = async (
   feedbackData: { userName: string; comment: string; rating?: number | null; sentimentSummary?: string | null; userId?: string | null }
 ): Promise<AppFeedback | null> => {
   try {
-    const savedFeedback = await prisma.feedback.create({
+    const savedFeedback = await prisma.Feedback.create({
       data: {
         project_id: projectId,
         user_name: feedbackData.userName,
@@ -326,7 +335,7 @@ export const addFeedbackToProject = async (
 
 export const getAllFeedbackWithProjectTitles = async (): Promise<Array<AppFeedback & { projectTitle: string }>> => {
   try {
-    const feedbackWithProjects = await prisma.feedback.findMany({
+    const feedbackWithProjects = await prisma.Feedback.findMany({
       include: {
         project: {
           select: { title: true },
@@ -361,7 +370,7 @@ export async function getUsers(): Promise<AppUser[]> {
 
 export async function deleteUserById(userId: string): Promise<{ success: boolean; error?: any }> {
   try {
-     await prisma.feedback.updateMany({
+     await prisma.Feedback.updateMany({
       where: { user_id: userId },
       data: { user_id: null },
     });
@@ -395,15 +404,25 @@ export async function getUserByEmail(email: string): Promise<AppUser | null> {
         return user ? mapPrismaUserToAppUser(user) : null;
     } catch (error) {
         console.error(`Error fetching user by email ${email} from DB with Prisma:`, error);
-        return null;
+        // Throw the error so it can be caught by the action
+        throw error;
     }
 }
+
+export const getFullUserByEmail = async (email: string) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    return user;
+  } catch {
+    return null;
+  }
+};
 
 
 // --- News Data Functions (Prisma Integrated) ---
 export const getNewsArticleBySlug = async (slug: string, userId?: string): Promise<AppNewsArticle | null> => {
   try {
-    const newsArticle = await prisma.newsArticle.findUnique({
+    const newsArticle = await prisma.newsarticle.findUnique({
       where: { slug },
       include: {
         comments: {
@@ -423,7 +442,7 @@ export const getNewsArticleBySlug = async (slug: string, userId?: string): Promi
 
     let isLiked = false;
     if (userId) {
-      const like = await prisma.newsLike.findUnique({
+      const like = await prisma.newslike.findUnique({
         where: {
           user_id_news_article_id: {
             user_id: userId,
@@ -457,7 +476,7 @@ export const getNewsArticleBySlug = async (slug: string, userId?: string): Promi
 
 export const getNewsArticleById = async (id: string): Promise<AppNewsArticle | null> => {
   try {
-    const newsArticle = await prisma.newsArticle.findUnique({
+    const newsArticle = await prisma.newsarticle.findUnique({
       where: { id },
     });
     if (!newsArticle) return null;
@@ -477,7 +496,7 @@ export const getNewsArticleById = async (id: string): Promise<AppNewsArticle | n
 
 export const getAllNewsArticles = async (): Promise<AppNewsArticle[]> => {
   try {
-    const newsArticles = await prisma.newsArticle.findMany({
+    const newsArticles = await prisma.newsarticle.findMany({
       orderBy: {
         publishedDate: 'desc',
       },
@@ -498,7 +517,7 @@ export type NewsArticleCreationData = Omit<PrismaNewsArticle, 'id' | 'createdAt'
 
 export const createNewsArticleInDb = async (newsData: NewsArticleCreationData): Promise<AppNewsArticle | null> => {
   try {
-    const newArticle = await prisma.newsArticle.create({
+    const newArticle = await prisma.newsarticle.create({
       data: {
         ...newsData,
         imageUrl: newsData.imageUrl || null,
@@ -524,7 +543,7 @@ export const updateNewsArticleInDb = async (id: string, newsData: Partial<NewsAr
       dataToUpdate.publishedDate = new Date(dataToUpdate.publishedDate);
     }
 
-    const updatedArticle = await prisma.newsArticle.update({
+    const updatedArticle = await prisma.newsarticle.update({
       where: { id },
       data: {
         ...dataToUpdate,
@@ -546,7 +565,7 @@ export const updateNewsArticleInDb = async (id: string, newsData: Partial<NewsAr
 
 export const deleteNewsArticleFromDb = async (id: string): Promise<boolean> => {
   try {
-    await prisma.newsArticle.delete({
+    await prisma.newsarticle.delete({
       where: { id },
     });
     return true;
@@ -730,7 +749,7 @@ const SITE_SETTINGS_ID = "global_settings";
 
 export const getSiteSettingsFromDb = async (): Promise<SiteSettings | null> => {
   try {
-    const settings = await prisma.siteSetting.findUnique({
+    const settings = await prisma.sitesetting.findUnique({
       where: { id: SITE_SETTINGS_ID },
     });
     if (settings) {
@@ -759,7 +778,7 @@ export const updateSiteSettingsInDb = async (settingsData: Partial<Omit<SiteSett
       footerMessage: settingsData.footerMessage,
     };
 
-    const updatedSettings = await prisma.siteSetting.upsert({
+    const updatedSettings = await prisma.sitesetting.upsert({
       where: { id: SITE_SETTINGS_ID },
       update: dataToUpsert,
       create: {
@@ -785,20 +804,20 @@ export const defaultVideos: AppVideo[] = [];
 // --- NEW Functions for User Dashboard ---
 
 export const getUserDashboardStatsFromDb = async (userId: string): Promise<UserDashboardStats> => {
-  const feedbackCount = await prisma.feedback.count({
+  const feedbackCount = await prisma.Feedback.count({
     where: { user_id: userId },
   });
 
-  const ratingAgg = await prisma.feedback.aggregate({
+  const ratingAgg = await prisma.Feedback.aggregate({
     _avg: { rating: true },
     where: { user_id: userId, rating: { not: null } },
   });
 
-  const bookmarkedProjectsCount = await prisma.bookmarkedProject.count({
+  const bookmarkedProjectsCount = await prisma.bookmarkedproject.count({
       where: { user_id: userId },
   });
 
-  const bookmarkedNewsCount = await prisma.bookmarkedNewsArticle.count({
+  const bookmarkedNewsCount = await prisma.bookmarkednewsarticle.count({
       where: { user_id: userId },
   });
 
@@ -811,7 +830,7 @@ export const getUserDashboardStatsFromDb = async (userId: string): Promise<UserD
 };
 
 export const getUserFeedbackFromDb = async (userId: string): Promise<Array<AppFeedback & { projectTitle: string, projectId: string }>> => {
-  const feedbackWithProjects = await prisma.feedback.findMany({
+  const feedbackWithProjects = await prisma.Feedback.findMany({
     where: { user_id: userId },
     include: {
       project: {
@@ -843,10 +862,10 @@ export const updateUserNameInDb = async (userId: string, name: string): Promise<
 
 // --- News Bookmark Functions ---
 export const getUserBookmarkedNewsFromDb = async (userId: string): Promise<AppNewsArticle[]> => {
-  const bookmarks = await prisma.bookmarkedNewsArticle.findMany({
+  const bookmarks = await prisma.bookmarkednewsarticle.findMany({
     where: { user_id: userId },
     include: {
-      newsArticle: true,
+      newsarticle: true,
     },
     orderBy: {
       createdAt: 'desc',
@@ -854,7 +873,7 @@ export const getUserBookmarkedNewsFromDb = async (userId: string): Promise<AppNe
   });
 
   return bookmarks.map(bookmark => ({
-    ...mapPrismaNewsToAppNews(bookmark.newsArticle),
+    ...mapPrismaNewsToAppNews(bookmark.newsarticle),
     comments: [],
     likeCount: 0,
     isLikedByUser: true,
@@ -862,7 +881,7 @@ export const getUserBookmarkedNewsFromDb = async (userId: string): Promise<AppNe
 };
 
 export const isNewsArticleBookmarked = async (userId: string, articleId: string): Promise<boolean> => {
-  const bookmark = await prisma.bookmarkedNewsArticle.findUnique({
+  const bookmark = await prisma.bookmarkednewsarticle.findUnique({
     where: {
       user_id_news_article_id: {
         user_id: userId,
@@ -874,7 +893,7 @@ export const isNewsArticleBookmarked = async (userId: string, articleId: string)
 };
 
 export const addNewsBookmarkInDb = async (userId: string, articleId: string) => {
-  return prisma.bookmarkedNewsArticle.create({
+  return prisma.bookmarkednewsarticle.create({
     data: {
       user_id: userId,
       news_article_id: articleId,
@@ -883,7 +902,7 @@ export const addNewsBookmarkInDb = async (userId: string, articleId: string) => 
 };
 
 export const removeNewsBookmarkInDb = async (userId: string, articleId: string) => {
-  return prisma.bookmarkedNewsArticle.delete({
+  return prisma.bookmarkednewsarticle.delete({
     where: {
       user_id_news_article_id: {
         user_id: userId,
@@ -895,7 +914,7 @@ export const removeNewsBookmarkInDb = async (userId: string, articleId: string) 
 
 // --- News Comments and Likes Functions ---
 export const addNewsCommentToDb = async (articleId: string, userId: string, content: string): Promise<PrismaNewsComment> => {
-  return prisma.newsComment.create({
+  return prisma.newscomment.create({
     data: {
       content,
       news_article_id: articleId,
@@ -905,7 +924,7 @@ export const addNewsCommentToDb = async (articleId: string, userId: string, cont
 };
 
 export const toggleNewsLikeInDb = async (articleId: string, userId: string): Promise<{ liked: boolean }> => {
-  const existingLike = await prisma.newsLike.findUnique({
+  const existingLike = await prisma.newslike.findUnique({
     where: {
       user_id_news_article_id: {
         user_id: userId,
@@ -915,12 +934,12 @@ export const toggleNewsLikeInDb = async (articleId: string, userId: string): Pro
   });
 
   if (existingLike) {
-    await prisma.newsLike.delete({
+    await prisma.newslike.delete({
       where: { id: existingLike.id },
     });
     return { liked: false };
   } else {
-    await prisma.newsLike.create({
+    await prisma.newslike.create({
       data: {
         user_id: userId,
         news_article_id: articleId,

@@ -44,7 +44,7 @@
     "initiative": "Ètò Ìjọba Àpapọ̀ Nàìjíríà."
   },
   "home_page": {
-    "hero_title": "Ijikọ àwọn Nàìjíríà pẹ̀lú Àwọn Iṣẹ́ Ìjọba",
+    "hero_title": "Wo Ohun tí Nàìjíríà Ń Kọ́",
     "hero_subtitle": "Ṣàwárí àwọn ìjìnlẹ̀ òye sí àwọn iṣẹ́ ìjọba àti àwọn ètò ní gbogbo ẹ̀ka. Tọpinpin ìtẹ̀síwájú, lóye ipa, kí o sì kópa nínú àkókò ìṣàkóso tuntun.",
     "search_placeholder": "Wá àwọn iṣẹ́ bíi 'Lagos-Ibadan Expressway'...",
     "search_button": "Wáà",
@@ -78,7 +78,8 @@
     "password_label": "Ọrọ aṣínà",
     "login_button": "Wọlé pẹ̀lú imeli",
     "processing": "Ó ń ṣiṣẹ́...",
-    "logging_in": "Ó ń wọlé..."
+    "logging_in": "Ó ń wọlé...",
+    "forgot_password_link": "O gbàgbé ọ̀rọ̀ aṣínà rẹ?"
   },
   "signup_page": {
     "title": "Ṣẹda Àpamọ́",
@@ -99,6 +100,7 @@
     "overview": "Àkópọ̀",
     "profile_settings": "Ètò Profaili",
     "my_feedback": "Èsì Mi",
+    "bookmarked_news": "Ìròyìn tí a fipamọ́",
     "admin_tools": "Àwọn Ohun Èlò Admin",
     "admin_overview": "Àkópọ̀ Admin",
     "manage_users": "Ṣàkóso Àwọn Olùlò",
@@ -117,6 +119,8 @@
     "feedback_description": "Iye àwọn àlàyé àti ìṣirò tí o ti fúnni.",
     "bookmarked_projects": "Àwọn Iṣẹ́ Tí a Sàmì sí",
     "bookmarked_description": "Àwọn iṣẹ́ tí o ń tọpinpin lọ́wọ́lọ́wọ́.",
+    "bookmarked_news": "Ìròyìn tí a fipamọ́",
+    "bookmarked_news_description": "Àwọn ìròyìn tí o ti fipamọ́ fún kíkà nígbà tó yá.",
     "average_rating": "Ìṣirò Apapọ̀ Tí a Fúnni",
     "average_rating_description": "Ìṣirò apapọ̀ àwọn iṣẹ́ rẹ.",
     "quick_actions": "Àwọn Ìgbésẹ̀ Kíákíá",
@@ -126,5 +130,25 @@
     "view_my_feedback_description": "Ṣe àyẹ̀wò gbogbo èsì tí o ti fúnni.",
     "explore_projects": "Ṣàwárí Àwọn Iṣẹ́",
     "explore_projects_description": "Ṣàwárí àwọn iṣẹ́ àti ètò tuntun."
+  },
+  "reset_password_page": {
+    "title": "Gbàgbé Ọrọ aṣínà",
+    "description": "Tẹ adirẹsi imeli rẹ sii láti gba ìjápọ̀ àtúntò ọrọ aṣínà.",
+    "email_label": "Adirẹsi imeli",
+    "send_reset_link_button": "Fi Ìjápọ̀ Àtúntò Ránṣẹ́",
+    "sending": "Ó ń firánṣẹ́...",
+    "back_to_login": "Padà sí ojú-ewé ìwọlé",
+    "success_title": "Àṣeyọrí",
+    "error_title": "Aṣìṣe"
+  },
+  "new_password_page": {
+    "title": "Ṣeto ọrọ aṣínà tuntun",
+    "description": "Tẹ ọrọ aṣínà tuntun rẹ sii ní ìsàlẹ̀.",
+    "password_label": "Ọrọ aṣínà Tuntun",
+    "reset_password_button": "Tún Ọrọ aṣínà Tò",
+    "resetting": "Ó ń tún tò...",
+    "back_to_login": "Padà sí ojú-ewé ìwọlé",
+    "success_title": "Àṣeyọrí",
+    "error_title": "Aṣìṣe"
   }
 }

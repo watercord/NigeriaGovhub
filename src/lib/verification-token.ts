@@ -16,7 +16,7 @@ export const getVerificationTokenByToken = async (token: string) => {
 export const getVerificationTokenByEmail = async (email: string) => {
   try {
     const verificationToken = await prisma.verificationToken.findFirst({
-      where: { email: email },
+      where: { identifier: email },
     });
     return verificationToken;
   } catch {
@@ -33,18 +33,19 @@ export const createVerificationToken = async (email: string) => {
 
     if (existingToken) {
         await prisma.verificationToken.delete({
-            where: { id: existingToken.id },
+            where: { token: existingToken.token },
         });
     }
 
     const verificationToken = await prisma.verificationToken.create({
         data: {
-            email: email,
-            token: token,
-            expires: expires,
+            identifier: email,
+            token,
+            expires,
         },
     });
 
     return verificationToken;
 };
+
 

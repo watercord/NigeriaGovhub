@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, type SubmitHandler } from 'react-hook-form';
@@ -11,6 +12,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { useLanguage } from '@/context/language-context';
+import { PasswordInput } from '../common/password-input';
+import Link from 'next/link';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -60,14 +63,14 @@ export function LoginForm() {
     const redirectUrl = searchParams.get('redirect') || '/dashboard/user';
     await signIn('google', { callbackUrl: redirectUrl });
   };
-  
+
   const overallLoading = isLoadingCredentials || isLoadingGoogle;
 
   return (
     <div className="space-y-6">
-      <Button 
-        variant="outline" 
-        className="w-full button-hover" 
+      <Button
+        variant="outline"
+        className="w-full button-hover"
         onClick={handleGoogleSignIn}
         disabled={overallLoading}
       >
@@ -109,10 +112,12 @@ export function LoginForm() {
         <div>
           <div className="flex items-center justify-between">
             <Label htmlFor="password">{t.password_label}</Label>
+            <Button variant="link" asChild className="text-xs p-0 h-auto">
+              <Link href="/reset">{t.forgot_password_link || 'Forgot password?'}</Link>
+            </Button>
           </div>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="current-password"
             {...register("password")}
             className="mt-1"
@@ -120,7 +125,7 @@ export function LoginForm() {
           />
           {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
         </div>
-        
+
         <Button type="submit" className="w-full button-hover" disabled={overallLoading}>
           {isLoadingCredentials ? t.logging_in : t.login_button}
         </Button>

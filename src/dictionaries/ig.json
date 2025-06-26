@@ -44,7 +44,7 @@
     "initiative": "Atụmatụ Gọọmentị Etiti nke Naịjirịa."
   },
   "home_page": {
-    "hero_title": "Ijikọ Ndị Naịjirịa na Ọrụ Gọọmentị",
+    "hero_title": "Hụ Ihe Naịjirịa Na-ewu",
     "hero_subtitle": "Chọpụta nghọta doro anya banyere ọrụ gọọmentị na atụmatụ n'akụkụ niile. Soro ọganihu, ghọta mmetụta, ma soro n'oge ọchịchị ọhụrụ.",
     "search_placeholder": "Chọọ ọrụ dịka 'Lagos-Ibadan Expressway'...",
     "search_button": "Chọọ",
@@ -78,7 +78,8 @@
     "password_label": "Okwuntughe",
     "login_button": "Jiri Ozi ịntanetị banye",
     "processing": "Na-ahazi...",
-    "logging_in": "Na-abanye..."
+    "logging_in": "Na-abanye...",
+    "forgot_password_link": "Chefuru okwuntughe gị?"
   },
   "signup_page": {
     "title": "Mepụta Akaụntụ",
@@ -99,6 +100,7 @@
     "overview": "Nchịkọta",
     "profile_settings": "Ntọala Profaịlụ",
     "my_feedback": "Nkwughachi m",
+    "bookmarked_news": "Ozi ọma Edere aha",
     "admin_tools": "Ngwaọrụ nchịkwa",
     "admin_overview": "Nchịkọta nchịkwa",
     "manage_users": "Jikwaa Ndị ọrụ",
@@ -117,6 +119,8 @@
     "feedback_description": "Ngụkọta nke nkọwa na ntụle i nyere.",
     "bookmarked_projects": "Ọrụ ndị edobere",
     "bookmarked_description": "Ọrụ ndị ị na-eso ugbu a.",
+    "bookmarked_news": "Ozi ọma Edere aha",
+    "bookmarked_news_description": "Ozi ọma ndị i debere maka oge ọzọ.",
     "average_rating": "Ntụle Nkezi E nyere",
     "average_rating_description": "Ntụle nkezi ọrụ gị.",
     "quick_actions": "Omume ngwa ngwa",
@@ -126,5 +130,25 @@
     "view_my_feedback_description": "Nyochaa nkwughachi niile i nyere.",
     "explore_projects": "Nyochaa Ọrụ",
     "explore_projects_description": "Chọpụta ọrụ ọhụrụ na atụmatụ."
+  },
+  "reset_password_page": {
+    "title": "Chefuru Okwuntughe",
+    "description": "Tinye ozi ịntanetị gị iji nweta njikọ ntọgharị okwuntughe.",
+    "email_label": "Adreesị ozi ịntanetị",
+    "send_reset_link_button": "Zipu Njikọ Ntọgharị",
+    "sending": "Na-ezipu...",
+    "back_to_login": "Laghachi na nbanye",
+    "success_title": "Ọganihu",
+    "error_title": "Njehie"
+  },
+  "new_password_page": {
+    "title": "Tọọ okwuntughe ọhụrụ",
+    "description": "Tinye okwuntughe ọhụrụ gị n'okpuru.",
+    "password_label": "Okwuntughe Ọhụrụ",
+    "reset_password_button": "Tọgharịa Okwuntughe",
+    "resetting": "Na-atọgharị...",
+    "back_to_login": "Laghachi na nbanye",
+    "success_title": "Ọganihu",
+    "error_title": "Njehie"
   }
 }

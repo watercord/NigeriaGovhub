@@ -44,7 +44,7 @@
     "initiative": "Shirin Gwamnatin Tarayyar Najeriya."
   },
   "home_page": {
-    "hero_title": "Haɗa 'Yan Najeriya da Ayyukan Gwamnati",
+    "hero_title": "Duba Abin da Najeriya Ke Ginawa",
     "hero_subtitle": "Gano bayanan gaskiya game da ayyukan gwamnati da shirye-shirye a dukkan sassa. Biyo bayan ci gaba, fahimtar tasiri, da shiga cikin sabon zamanin mulki.",
     "search_placeholder": "Nemi ayyuka kamar 'Lagos-Ibadan Expressway'...",
     "search_button": "Nema",
@@ -78,7 +78,8 @@
     "password_label": "Kalmar sirri",
     "login_button": "Shiga da Imel",
     "processing": "Ana aiki...",
-    "logging_in": "Ana shiga..."
+    "logging_in": "Ana shiga...",
+    "forgot_password_link": "Ka manta kalmar sirri?"
   },
   "signup_page": {
     "title": "Buɗe Asusu",
@@ -99,6 +100,7 @@
     "overview": "Dubawa",
     "profile_settings": "Saitunan Bayanan Sirri",
     "my_feedback": "Ra'ayoyina",
+    "bookmarked_news": "Labaran da aka Adana",
     "admin_tools": "Kayan Aikin Admin",
     "admin_overview": "Dubawar Admin",
     "manage_users": "Sarrafa Masu Amfani",
@@ -117,6 +119,8 @@
     "feedback_description": "Jimillar sharhi da kimantawar da ka bayar.",
     "bookmarked_projects": "Ayyukan da aka Alamta",
     "bookmarked_description": "Ayyukan da kake biyo baya a halin yanzu.",
+    "bookmarked_news": "Labaran da aka Adana",
+    "bookmarked_news_description": "Labaran da ka adana don karantawa daga baya.",
     "average_rating": "Matsakaicin Kimantawar da aka Bayar",
     "average_rating_description": "Matsakaicin kimantawar ayyukanka.",
     "quick_actions": "Ayyukan Sauri",
@@ -126,5 +130,25 @@
     "view_my_feedback_description": "Duba dukkan ra'ayoyin da ka aika.",
     "explore_projects": "Binciko Ayyuka",
     "explore_projects_description": "Gano sabbin ayyuka da shirye-shirye."
+  },
+  "reset_password_page": {
+    "title": "Manta Kalmar Sirri",
+    "description": "Shigar da imel dinka don karbar hanyar sake saita kalmar sirri.",
+    "email_label": "Adireshin Imel",
+    "send_reset_link_button": "Aika Hanyar Sake Saitawa",
+    "sending": "Ana aikowa...",
+    "back_to_login": "Koma shiga",
+    "success_title": "Nasara",
+    "error_title": "Kuskure"
+  },
+  "new_password_page": {
+    "title": "Saita Sabuwar Kalmar Sirri",
+    "description": "Shigar da sabuwar kalmar sirrinka a kasa.",
+    "password_label": "Sabuwar Kalmar Sirri",
+    "reset_password_button": "Sake Saita Kalmar Sirri",
+    "resetting": "Ana sake saitawa...",
+    "back_to_login": "Koma shiga",
+    "success_title": "Nasara",
+    "error_title": "Kuskure"
   }
 }

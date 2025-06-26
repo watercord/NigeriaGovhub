@@ -45,11 +45,14 @@ import {
 import type { Feedback as AppFeedback, User as AppUser, Project as AppProject, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, Video as AppVideo, NewsArticleFormData, ProjectFormData, ServiceFormData, VideoFormData, SiteSettings, UserDashboardStats } from '@/types';
 import type { SiteSettingsFormData } from '@/app/dashboard/admin/site-settings/page';
 import prisma from './prisma';
+import { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { createVerificationToken, getVerificationTokenByToken } from './verification-token';
-import { sendVerificationEmail } from './mail';
+import { sendVerificationEmail, sendPasswordResetEmail } from './mail';
+import { createPasswordResetToken, getPasswordResetTokenByToken } from './password-reset-token';
+
 
 
 export interface SubmitFeedbackResult {
@@ -155,21 +158,22 @@ export async function addProject(
 ): Promise<ActionResult<AppProject>> {
   try {
     const dataToSave: ProjectCreationData = {
-      title: formData.title,
-      subtitle: formData.subtitle,
-      ministry_id: formData.ministryId,
-      state_id: formData.stateId,
-      status: formData.status,
-      start_date: formData.startDate,
-      expected_end_date: formData.expectedEndDate ?? null,
-      description: formData.description ?? null,
-      budget: formData.budget ?? null,
-      expenditure: formData.expenditure ?? null,
-      tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
-      images: [],
-      videos: [],
-      impact_stats: [],
-    };
+  title: formData.title,
+  subtitle: formData.subtitle,
+  ministry_id: formData.ministryId,
+  state_id: formData.stateId,
+  status: formData.status,
+  start_date: formData.startDate,
+  expected_end_date: formData.expectedEndDate ?? null,
+  actual_end_date: null, // Explicitly set to null for new projects
+  description: formData.description,
+  budget: formData.budget ? new Prisma.Decimal(formData.budget) : null,
+  expenditure: formData.expenditure ? new Prisma.Decimal(formData.expenditure) : null,
+  tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
+  images: [],
+  videos: [],
+  impact_stats: [],
+};
 
     const newProject = await saveProjectToDb(dataToSave);
     if (!newProject) {
@@ -207,8 +211,12 @@ export async function updateProject(
       start_date: formData.startDate,
       expected_end_date: formData.expectedEndDate,
       description: formData.description,
-      budget: formData.budget ?? null,
-      expenditure: formData.expenditure ?? null,
+      budget: formData.budget !== undefined
+    ? (formData.budget !== null ? new Prisma.Decimal(formData.budget) : null)
+    : undefined,
+      expenditure: formData.expenditure !== undefined
+    ? (formData.expenditure !== null ? new Prisma.Decimal(formData.expenditure) : null)
+    : undefined,
       tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
     };
 
@@ -256,7 +264,7 @@ export async function addNewsArticle(
   newsData: NewsArticleFormData
 ): Promise<ActionResult<AppNewsArticle>> {
   try {
-    const existingArticleBySlug = await prisma.newsArticle.findUnique({ where: { slug: newsData.slug }});
+    const existingArticleBySlug = await prisma.newsarticle.findUnique({ where: { slug: newsData.slug }});
     if (existingArticleBySlug) {
       return { success: false, message: `A news article with the slug "${newsData.slug}" already exists.`};
     }
@@ -301,7 +309,7 @@ export async function updateNewsArticle(
 ): Promise<ActionResult<AppNewsArticle>> {
   try {
     if (newsData.slug) {
-      const existingArticleBySlug = await prisma.newsArticle.findFirst({
+      const existingArticleBySlug = await prisma.newsarticle.findFirst({
         where: {
           slug: newsData.slug,
           id: { not: id }
@@ -569,7 +577,7 @@ export async function fetchAdminDashboardStats() {
   try {
     const totalProjects = await prisma.project.count();
     const totalUsers = await prisma.user.count();
-    const totalNewsArticles = await prisma.newsArticle.count();
+    const totalNewsArticles = await prisma.newsarticle.count();
     const totalServices = await prisma.service.count();
     const totalVideos = await prisma.video.count();
     return { totalProjects, totalUsers, totalNewsArticles, totalServices, totalVideos };
@@ -630,9 +638,15 @@ interface CreateUserResult {
 
 export async function createUserAction(data: { name: string; email: string; password?: string }): Promise<CreateUserResult> {
   try {
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    let existingUser;
+    try {
+       existingUser = await getUserByEmail(data.email);
+    } catch (e: any) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2020') {
+            return { success: false, message: "An account with this email already exists but has a data issue. Please try logging in with your original method (e.g., Google) or contact support." };
+        }
+        throw e;
+    }
 
     if (existingUser) {
       return { success: false, message: "An account with this email already exists." };
@@ -647,14 +661,16 @@ export async function createUserAction(data: { name: string; email: string; pass
 
     await prisma.user.create({
       data: {
+        id: crypto.randomUUID(),
         name: data.name,
         email: data.email,
         password: hashedPassword,
+        updated_at: new Date(),
       },
     });
 
     const verificationToken = await createVerificationToken(data.email);
-    await sendVerificationEmail(verificationToken.email, verificationToken.token);
+    await sendVerificationEmail(verificationToken.identifier, verificationToken.token);
 
     return { success: true, message: "Verification email sent! Please check your inbox." };
   } catch (error) {
@@ -684,7 +700,7 @@ export async function newVerificationAction(token: string): Promise<{ success?: 
       return { error: "Token has expired!" };
   }
 
-  const existingUser = await getUserByEmail(existingToken.email);
+  const existingUser = await getUserByEmail(existingToken.identifier);
 
   if (!existingUser) {
       return { error: "Email does not exist!" };
@@ -694,12 +710,12 @@ export async function newVerificationAction(token: string): Promise<{ success?: 
       where: { id: existingUser.id },
       data: {
           emailVerified: new Date(),
-          email: existingToken.email,
+          email: existingToken.identifier,
       }
   });
 
   await prisma.verificationToken.delete({
-      where: { id: existingToken.id }
+      where: { token: existingToken.token }
   });
 
   return { success: "Email verified successfully!" };
@@ -870,7 +886,7 @@ export async function addNewsCommentAction(articleId: string, content: string): 
   try {
     await addNewsCommentToDb(articleId, session.user.id, content);
 
-    const article = await prisma.newsArticle.findUnique({ where: { id: articleId }, select: { slug: true } });
+    const article = await prisma.newsarticle.findUnique({ where: { id: articleId }, select: { slug: true } });
     if (article) {
       revalidatePath(`/news/${article.slug}`);
     }
@@ -891,7 +907,7 @@ export async function toggleNewsLikeAction(articleId: string): Promise<{ success
   try {
     await toggleNewsLikeInDb(articleId, session.user.id);
 
-    const article = await prisma.newsArticle.findUnique({ where: { id: articleId }, select: { slug: true } });
+    const article = await prisma.newsarticle.findUnique({ where: { id: articleId }, select: { slug: true } });
     if (article) {
       revalidatePath(`/news/${article.slug}`);
     }
@@ -901,4 +917,56 @@ export async function toggleNewsLikeAction(articleId: string): Promise<{ success
     console.error("Error toggling news like:", error);
     return { success: false, message: "An unexpected error occurred." };
   }
+}
+
+// --- Forgot/Reset Password Actions ---
+
+export async function resetAction(email: string): Promise<{ success?: string; error?: string }> {
+  const existingUser = await getUserByEmail(email);
+
+  if (!existingUser) {
+    return { error: "No account found with that email." };
+  }
+
+  const passwordResetToken = await createPasswordResetToken(email);
+  await sendPasswordResetEmail(passwordResetToken.identifier, passwordResetToken.token);
+
+  return { success: "Password reset email sent!" };
+}
+
+export async function newPasswordAction(password: string, token: string | null): Promise<{ success?: string; error?: string }> {
+  if (!token) {
+    return { error: "Missing token!" };
+  }
+
+  const existingToken = await getPasswordResetTokenByToken(token);
+
+  if (!existingToken) {
+    return { error: "Invalid token!" };
+  }
+
+  const hasExpired = new Date(existingToken.expires) < new Date();
+
+  if (hasExpired) {
+    return { error: "Token has expired." };
+  }
+
+  const existingUser = await getUserByEmail(existingToken.identifier);
+
+  if (!existingUser) {
+    return { error: "No account found for this token." };
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await prisma.user.update({
+    where: { id: existingUser.id },
+    data: { password: hashedPassword },
+  });
+
+  await prisma.passwordResetToken.delete({
+    where: { id: existingToken.id },
+  });
+
+  return { success: "Password updated successfully!" };
 }

@@ -1,37 +1,15 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
-// User and Auth models (NextAuth.js)
-model User {
-  id                    String                    @id @default(cuid())
-  name                  String?
-  email                 String?                   @unique
-  emailVerified         DateTime?
-  image                 String?
-  password              String?
-  role                  String?                   @default("user") // 'user' or 'admin'
-  created_at            DateTime                  @default(now())
-  updated_at            DateTime                  @updatedAt
-  accounts              Account[]
-  sessions              Session[]
-  feedback_list         Feedback[]
-  bookmarked_projects   BookmarkedProject[]
-  bookmarked_news       BookmarkedNewsArticle[]
-  news_likes            NewsLike[]
-  news_comments         NewsComment[]
-}
-
-model Account {
-  id                String  @id @default(cuid())
+model account {
+  id                String  @id
   userId            String
   type              String
   provider          String
@@ -44,143 +22,121 @@ model Account {
   id_token          String? @db.Text
   session_state     String?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
+  @@unique([provider, providerAccountId], map: "Account_provider_providerAccountId_key")
+  @@index([userId], map: "Account_userId_fkey")
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model bookmarkednewsarticle {
+  id              String      @id
+  user_id         String
+  news_article_id String
+  createdAt       DateTime    @default(now())
+  newsarticle     newsarticle @relation(fields: [news_article_id], references: [id])
+
+  @@unique([user_id, news_article_id], map: "BookmarkedNewsArticle_user_id_news_article_id_key")
+  @@index([news_article_id], map: "BookmarkedNewsArticle_news_article_id_fkey")
+  @@map("bookmarkednewsarticle")
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
+model bookmarkedproject {
+  id         String   @id
+  user_id    String
+  project_id String
+  createdAt  DateTime @default(now())
 
-  @@unique([identifier, token])
+  @@unique([user_id, project_id], map: "BookmarkedProject_user_id_project_id_key")
 }
 
+model Feedback {
+  id                String   @id
+  project_id        String
+  user_id           String?
+  user_name         String
+  comment           String   @db.Text
+  rating            Int?
+  sentiment_summary String?
+  created_at        DateTime @default(now())
 
-// Application-specific models
-model Project {
-  id                String       @id @default(cuid())
-  title             String       @unique
+  project project @relation(fields: [project_id], references: [id])
+
+  @@index([project_id], map: "Feedback_project_id_fkey")
+  @@index([user_id], map: "Feedback_user_id_fkey")
+}
+
+model newsarticle {
+  id            String                  @id
+  slug          String                  @unique(map: "NewsArticle_slug_key")
+  title         String
+  summary       String                  @db.Text
+  imageUrl      String?
+  dataAiHint    String?
+  category      String
+  publishedDate DateTime
+  content       String                  @db.Text
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime
+  bookmarks     bookmarkednewsarticle[]
+}
+
+model newscomment {
+  id              String   @id
+  content         String   @db.Text
+  user_id         String
+  news_article_id String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+
+  @@index([news_article_id], map: "NewsComment_news_article_id_fkey")
+  @@index([user_id], map: "NewsComment_user_id_fkey")
+}
+
+model newslike {
+  id              String   @id
+  user_id         String
+  news_article_id String
+  createdAt       DateTime @default(now())
+
+  @@unique([user_id, news_article_id], map: "NewsLike_user_id_news_article_id_key")
+  @@index([news_article_id], map: "NewsLike_news_article_id_fkey")
+}
+
+model project {
+  id                String       @id
+  title             String       @unique(map: "Project_title_key")
   subtitle          String
   ministry_id       String
   state_id          String
-  status            String       @default("Planned") // e.g., Planned, Ongoing, Completed, On Hold
+  status            String       @default("Planned")
   start_date        DateTime
   expected_end_date DateTime?
   actual_end_date   DateTime?
   description       String       @db.Text
-  images            Json?        // Store as JSON array of { url: string, alt: string }
-  videos            Json?        // Store as JSON array of Video objects
-  impact_stats      Json?        // Store as JSON array of ImpactStat objects
+  images            String?      @db.LongText
+  videos            String?      @db.LongText
+  impact_stats      String?      @db.LongText
   budget            Decimal?     @db.Decimal(15, 2)
   expenditure       Decimal?     @db.Decimal(15, 2)
   created_at        DateTime     @default(now())
-  last_updated_at   DateTime     @updatedAt
-  tags              ProjectTag[] @relation("ProjectTags")
-  feedback_list     Feedback[]   @relation("ProjectFeedback")
+  last_updated_at   DateTime
+
+  feedback_list     Feedback[]
+  projecttags       projecttag[]
 }
 
-model Tag {
-  id       Int          @id @default(autoincrement())
-  name     String       @unique
-  projects ProjectTag[] @relation("ProjectTags")
-}
-
-model ProjectTag {
+model projecttag {
   projectId String
   tagId     Int
-  project   Project @relation("ProjectTags", fields: [projectId], references: [id], onDelete: Cascade)
-  tag       Tag     @relation("ProjectTags", fields: [tagId], references: [id], onDelete: Cascade)
+
+  project project @relation(fields: [projectId], references: [id])
+  tag     tag     @relation(fields: [tagId], references: [id])
 
   @@id([projectId, tagId])
+
 }
 
-model Feedback {
-  id                String    @id @default(cuid())
-  project_id        String
-  user_id           String?
-  user_name         String
-  comment           String    @db.Text
-  rating            Int?
-  sentiment_summary String?
-  created_at        DateTime  @default(now())
-  project           Project   @relation("ProjectFeedback", fields: [project_id], references: [id], onDelete: Cascade)
-  user              User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
-}
-
-model NewsArticle {
-  id              String                  @id @default(cuid())
-  slug            String                  @unique
-  title           String
-  summary         String                  @db.Text
-  imageUrl        String?
-  dataAiHint      String?
-  category        String
-  publishedDate   DateTime
-  content         String                  @db.Text
-  createdAt       DateTime                @default(now())
-  updatedAt       DateTime                @updatedAt
-  bookmarks       BookmarkedNewsArticle[]
-  likes           NewsLike[]
-  comments        NewsComment[]
-}
-
-model BookmarkedNewsArticle {
-  id              String      @id @default(cuid())
-  user_id         String
-  news_article_id String
-  createdAt       DateTime    @default(now())
-  user            User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  newsArticle     NewsArticle @relation(fields: [news_article_id], references: [id], onDelete: Cascade)
-
-  @@unique([user_id, news_article_id])
-}
-
-model BookmarkedProject {
-  id         String   @id @default(cuid())
-  user_id    String
-  project_id String
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  // No relation back to Project needed, assuming it's a one-way bookmark
-
-  @@unique([user_id, project_id])
-}
-
-model NewsLike {
-    id String @id @default(cuid())
-    user_id String
-    news_article_id String
-    createdAt DateTime @default(now())
-    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-    newsArticle NewsArticle @relation(fields: [news_article_id], references: [id], onDelete: Cascade)
-
-    @@unique([user_id, news_article_id])
-}
-
-model NewsComment {
-    id String @id @default(cuid())
-    content String @db.Text
-    user_id String
-    news_article_id String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
-    newsArticle NewsArticle @relation(fields: [news_article_id], references: [id], onDelete: Cascade)
-}
-
-model Service {
-  id         String   @id @default(cuid())
-  slug       String   @unique
+model service {
+  id         String   @id
+  slug       String   @unique(map: "Service_slug_key")
   title      String
   summary    String   @db.Text
   iconName   String?
@@ -189,25 +145,69 @@ model Service {
   imageUrl   String?
   dataAiHint String?
   createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt  DateTime
 }
 
-model Video {
-  id           String   @id @default(cuid())
+model session {
+  id           String   @id
+  sessionToken String   @unique(map: "Session_sessionToken_key")
+  userId       String
+  expires      DateTime
+
+  @@index([userId], map: "Session_userId_fkey")
+}
+
+model sitesetting {
+  id              String   @id @default("global_settings")
+  siteName        String?
+  maintenanceMode Boolean  @default(false)
+  contactEmail    String?
+  footerMessage   String?  @db.Text
+  updatedAt       DateTime
+}
+
+model tag {
+  id         Int          @id @default(autoincrement())
+  name       String       @unique(map: "Tag_name_key")
+  projecttag projecttag[]
+}
+
+model user {
+  id            String    @id
+  name          String?
+  email         String?   @unique(map: "User_email_key")
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String?   @default("user")
+  created_at    DateTime  @default(now())
+  updated_at    DateTime
+}
+
+model verificationToken {
+  identifier String
+  token      String   @unique(map: "VerificationToken_token_key")
+  expires    DateTime
+
+  @@unique([identifier, token], map: "VerificationToken_identifier_token_key")
+}
+
+model video {
+  id           String   @id
   title        String
   url          String
   thumbnailUrl String?
   dataAiHint   String?
   description  String?  @db.Text
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime
 }
 
-model SiteSetting {
-  id              String    @id @default("global_settings")
-  siteName        String?
-  maintenanceMode Boolean   @default(false)
-  contactEmail    String?
-  footerMessage   String?   @db.Text
-  updatedAt       DateTime  @updatedAt
+model passwordResetToken {
+  id         String   @id @default(uuid())
+  identifier String
+  token      String   @unique(map: "PasswordResetToken_token_key")
+  expires    DateTime
+
+  @@unique([identifier, token], map: "PasswordResetToken_identifier_token_key")
 }

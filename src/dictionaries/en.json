@@ -78,7 +78,8 @@
     "password_label": "Password",
     "login_button": "Log In with Email",
     "processing": "Processing...",
-    "logging_in": "Logging in..."
+    "logging_in": "Logging in...",
+    "forgot_password_link": "Forgot password?"
   },
   "signup_page": {
     "title": "Create an Account",
@@ -134,5 +135,25 @@
     "comments_title": "Comments",
     "login_to_comment": "You must be logged in to leave a comment.",
     "login_button": "Log In or Sign Up"
+  },
+  "reset_password_page": {
+    "title": "Forgot Password",
+    "description": "Enter your email to receive a password reset link.",
+    "email_label": "Email Address",
+    "send_reset_link_button": "Send Reset Link",
+    "sending": "Sending...",
+    "back_to_login": "Back to login",
+    "success_title": "Success",
+    "error_title": "Error"
+  },
+  "new_password_page": {
+    "title": "Set a new password",
+    "description": "Enter your new password below.",
+    "password_label": "New Password",
+    "reset_password_button": "Reset Password",
+    "resetting": "Resetting...",
+    "back_to_login": "Back to login",
+    "success_title": "Success",
+    "error_title": "Error"
   }
 }
