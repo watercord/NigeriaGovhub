@@ -387,6 +387,7 @@ export async function addService(
     const dataToSave: ServiceCreationData = {
       title: serviceData.title,
       slug: serviceData.slug,
+      // updatedAt: serviceData.updatedAt,
       summary: serviceData.summary,
       category: serviceData.category,
       link: serviceData.link ?? null,
@@ -506,6 +507,7 @@ export async function addVideo(
       thumbnailUrl: videoData.thumbnailUrl ?? null,
       dataAiHint: videoData.dataAiHint ?? null,
       description: videoData.description ?? null,
+      createdAt:
     };
 
     const newVideo = await saveVideoToDb(dataToSave);
@@ -978,7 +980,7 @@ export async function newPasswordAction(password: string, token: string | null):
 
   return { success: "Password updated successfully!" };
 }
-function createHash(arg0: string) {
-  throw new Error('Function not implemented.');
-}
+// function createHash(arg0: string) {
+//   throw new Error('Function not implemented.');
+// }
 

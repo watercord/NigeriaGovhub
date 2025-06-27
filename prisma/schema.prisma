@@ -27,7 +27,7 @@ model account {
 }
 
 model bookmarkednewsarticle {
-  id              String      @id
+  id              String      @id @default(uuid())
   user_id         String
   news_article_id String
   createdAt       DateTime    @default(now())
@@ -64,7 +64,7 @@ model Feedback {
 }
 
 model newsarticle {
-  id            String                  @id
+  id               String               @id @default(uuid())
   slug          String                  @unique(map: "NewsArticle_slug_key")
   title         String
   summary       String                  @db.Text
@@ -74,20 +74,21 @@ model newsarticle {
   publishedDate DateTime
   content       String                  @db.Text
   createdAt     DateTime                @default(now())
-  updatedAt       DateTime                @default(now()) @updatedAt
+  updatedAt     DateTime                @default(now()) @updatedAt
   bookmarks     bookmarkednewsarticle[]
   newscomment   newscomment[]
 }
 
 model newscomment {
-  id              String       @id
-  content         String       @db.Text
+  id              String      @id @default(uuid())
+  content         String      @db.Text
   user_id         String
   news_article_id String
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
   newsarticle     newsarticle @relation(fields: [news_article_id], references: [id])
   newsarticleId   String?
+  user            user        @relation(fields: [user_id], references: [id])
 
   @@index([news_article_id], map: "NewsComment_news_article_id_fkey")
   @@index([user_id], map: "NewsComment_user_id_fkey")
@@ -107,8 +108,8 @@ model project {
   id                String    @id
   title             String    @unique(map: "Project_title_key")
   subtitle          String
-  ministry_id       String
-  state_id          String
+  ministry_id       String?
+  state_id          String?
   status            String    @default("Planned")
   start_date        DateTime
   expected_end_date DateTime?
@@ -137,7 +138,7 @@ model projecttag {
 }
 
 model service {
-  id         String   @id
+  id         String   @id @default(uuid())
   slug       String   @unique(map: "Service_slug_key")
   title      String
   summary    String   @db.Text
@@ -165,7 +166,7 @@ model sitesetting {
   maintenanceMode Boolean  @default(false)
   contactEmail    String?
   footerMessage   String?  @db.Text
-  updatedAt       DateTime
+  updatedAt       DateTime @updatedAt
 }
 
 model tag {
@@ -175,15 +176,16 @@ model tag {
 }
 
 model user {
-  id            String    @id
+  id            String        @id
   name          String?
-  email         String?   @unique(map: "User_email_key")
+  email         String?       @unique(map: "User_email_key")
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String?   @default("user")
-  created_at    DateTime  @default(now())
+  role          String?       @default("user")
+  created_at    DateTime      @default(now())
   updated_at    DateTime
+  newscomment   newscomment[]
 }
 
 model verificationToken {
@@ -195,7 +197,7 @@ model verificationToken {
 }
 
 model video {
-  id           String   @id
+  id           String   @id @default(uuid())
   title        String
   url          String
   thumbnailUrl String?

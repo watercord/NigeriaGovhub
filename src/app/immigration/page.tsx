@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Plane, ShieldCheck } from "lucide-react";
 import Image from "next/image";
+import Nis from '@/components/common/NIS.jpg';
 
 export default function ImmigrationPage() {
   return (
@@ -20,11 +21,11 @@ export default function ImmigrationPage() {
           <CardTitle className="font-headline text-2xl">Navigating Immigration and Citizenship</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-foreground/90">
-          <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Immigration services concept" 
-            width={800} 
-            height={400} 
+          <Image
+            src={Nis}
+            alt="Immigration services concept"
+            width={800}
+            height={400}
             className="w-full rounded-lg mb-6 shadow-md object-cover"
             data-ai-hint="passport airport"
           />
@@ -47,14 +48,14 @@ export default function ImmigrationPage() {
           </p>
         </CardContent>
       </Card>
-      
+
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="card-hover">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><Plane className="mr-2 h-5 w-5"/> Visa Applications</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Find information and apply for various types of Nigerian visas. (Placeholder for link)</p>
+            <p className="text-sm text-foreground/80">Find information and apply for various types of Nigerian visas. <a href="https://www.visahq.com/nigeria/" className="text-lime-600 underline text-base">Visit VisaHq</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -62,7 +63,7 @@ export default function ImmigrationPage() {
             <CardTitle className="font-headline text-xl flex items-center"><ShieldCheck className="mr-2 h-5 w-5"/> Citizenship Information</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Learn about the pathways to becoming a Nigerian citizen. (Placeholder for link)</p>
+            <p className="text-sm text-foreground/80">Learn about the pathways to becoming a Nigerian citizen. <a href="https://immigration.gov.ng/" className="text-lime-600 underline text-base">Visit the NIS Portal</a></p>
           </CardContent>
         </Card>
       </div>

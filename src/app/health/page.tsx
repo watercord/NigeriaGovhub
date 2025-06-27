@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart } from "lucide-react";
 import Image from "next/image";
-
+import HEALTH from "@/components/common/Health.png";
 export default function HealthPage() {
   return (
     <div className="space-y-8 py-8">
@@ -20,11 +20,11 @@ export default function HealthPage() {
           <CardTitle className="font-headline text-2xl">Promoting a Healthy Nation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-foreground/90">
-          <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Healthcare professionals" 
-            width={800} 
-            height={400} 
+          <Image
+            src={HEALTH}
+            alt="Healthcare professionals"
+            width={800}
+            height={400}
             className="w-full rounded-lg mb-6 shadow-md object-cover"
             data-ai-hint="doctor patient"
           />
@@ -36,7 +36,7 @@ export default function HealthPage() {
           </p>
           <ul className="list-disc list-inside space-y-1">
             <li>Primary Healthcare Services</li>
-            <li>National Health Insurance Scheme (NHIS)</li>
+            <li>National Health Insurance Scheme <a href="https://www.nhia.gov.ng/" className="text-lime-600 underline text-base">(NHIS)</a></li>
             <li>Disease Prevention and Control</li>
             <li>Maternal and Child Health</li>
             <li>Emergency Medical Services</li>
@@ -54,7 +54,7 @@ export default function HealthPage() {
             <CardTitle className="font-headline text-xl">Find a Health Facility</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Locate hospitals, clinics, and primary healthcare centers near you. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Locate hospitals, clinics, and primary healthcare centers near you. <a href="https://dataportal.ncdc.gov.ng/dataset/national-health-facility-registry" className="text-lime-600 underline text-base">Visit the National health facility dataset</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -62,7 +62,7 @@ export default function HealthPage() {
             <CardTitle className="font-headline text-xl">Health Advisories</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Stay updated on current health alerts and preventive measures. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Stay updated on current health alerts and preventive measures. <a href="https://ncdc.gov.ng/" className="text-lime-600 underline text-base">Visit the Health Advisories</a></p>
           </CardContent>
         </Card>
       </div>

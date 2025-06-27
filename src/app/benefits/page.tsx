@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gift, Users, Shield } from "lucide-react";
 import Image from "next/image";
+import Benefits from '@/components/common/CB.jpeg';
 
 export default function BenefitsPage() {
   return (
@@ -20,11 +21,11 @@ export default function BenefitsPage() {
           <CardTitle className="font-headline text-2xl">Supporting Our Citizens</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-foreground/90">
-          <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Community support concept" 
-            width={800} 
-            height={400} 
+          <Image
+            src={Benefits}
+            alt="Community support concept"
+            width={800}
+            height={400}
             className="w-full rounded-lg mb-6 shadow-md object-cover"
             data-ai-hint="community helping hands"
           />
@@ -47,14 +48,14 @@ export default function BenefitsPage() {
           </p>
         </CardContent>
       </Card>
-      
+
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="card-hover">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><Users className="mr-2 h-5 w-5"/> Social Investment Portal</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Access information on NSIP and other social programs. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Access information on NSIP and other social programs. <a href="http://n-sip.gov.ng/" className="text-lime-600 underline text-base">Visit N-sip</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -62,7 +63,7 @@ export default function BenefitsPage() {
             <CardTitle className="font-headline text-xl flex items-center"><Shield className="mr-2 h-5 w-5"/> Pension Commission</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Information from the National Pension Commission (PenCom). (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Information from the National Pension Commission (PenCom). <a href="https://www.pencom.gov.ng/" className="text-lime-600 underline text-base">Visit Pencom</a></p>
           </CardContent>
         </Card>
       </div>

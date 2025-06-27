@@ -1,6 +1,6 @@
 
 import type { Ministry, State, Project as AppProject, Feedback as AppFeedback, ImpactStat, Video as AppVideo, User as AppUser, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, ProjectFormData, SiteSettings, UserDashboardStats, NewsComment } from '@/types';
-import type * as LucideIcons from 'lucide-react'; // Keep this for type checking
+import type * as LucideIcons from 'lucide-react';
 import { TrendingUp as DefaultIcon, Server as DefaultServiceIcon } from 'lucide-react'; // Import specific icons for default
 import prisma from './prisma';
 import { v4 as uuid } from 'uuid';
@@ -121,8 +121,7 @@ const mapPrismaServiceToAppServiceItem = (prismaService: PrismaService): AppServ
     slug: prismaService.slug,
     title: prismaService.title,
     summary: prismaService.summary,
-    iconName: prismaService.iconName as keyof typeof LucideIcons | null,
-    icon: IconComponent,
+    iconName: prismaService.iconName,
     link: prismaService.link,
     category: prismaService.category,
     imageUrl: prismaService.imageUrl,
@@ -196,7 +195,17 @@ export const getAllProjects = async (): Promise<AppProject[]> => {
   }
 };
 
-export type ProjectCreationData = Omit<PrismaProject, 'id' | 'created_at' | 'last_updated_at' | 'images' | 'videos' | 'impact_stats'> & {
+export type ProjectCreationData = {
+  title: string;
+  subtitle: string;
+  ministry_id: string | null;
+  state_id: string | null;
+  status: 'Ongoing' | 'Completed' | 'Planned' | 'On Hold';
+  start_date: Date;
+  expected_end_date?: Date | null;
+  description: string;
+  budget?: number;
+  expenditure?: number | null;
   tags?: string[]; // These are tag *names*
   images?: any;
   videos?: any;
@@ -521,18 +530,20 @@ export const getAllNewsArticles = async (): Promise<AppNewsArticle[]> => {
   }
 };
 
-export type NewsArticleCreationData = Omit<PrismaNewsArticle, 'id' | 'createdAt' | 'updatedAt'>;
+export type NewsArticleCreationData = {
+  title: string;
+  slug: string;
+  summary: string;
+  category: string;
+  publishedDate: Date;
+  content: string;
+  imageUrl: string | null;
+  dataAiHint: string | null;
+};
 
 export const createNewsArticleInDb = async (newsData: NewsArticleCreationData): Promise<AppNewsArticle | null> => {
   try {
-    const newArticle = await prisma.newsarticle.create({
-      data: {
-        ...newsData,
-        imageUrl: newsData.imageUrl || null,
-        dataAiHint: newsData.dataAiHint || null,
-        id: uuid(), // Generate an ID if your DB doesn't auto-generate
-      }
-    });
+    const newArticle = await prisma.newsarticle.create({ data: newsData });
     return {
       ...mapPrismaNewsToAppNews(newArticle),
       comments: [],
@@ -624,19 +635,10 @@ export const getServiceById = async (id: string): Promise<AppServiceItem | null>
   }
 };
 
-export type ServiceCreationData = Omit<PrismaService, 'id' | 'createdAt' | 'updatedAt'>;
-
+export type ServiceCreationData = Prisma.serviceUncheckedCreateInput;
 export const createServiceInDb = async (serviceData: ServiceCreationData): Promise<AppServiceItem | null> => {
   try {
-    const newService = await prisma.service.create({
-      data: {
-        ...serviceData,
-        iconName: serviceData.iconName || null,
-        link: serviceData.link || null,
-        imageUrl: serviceData.imageUrl || null,
-        dataAiHint: serviceData.dataAiHint || null,
-      }
-    });
+     const newService = await prisma.service.create({ data: serviceData });
     return mapPrismaServiceToAppServiceItem(newService);
   } catch (error) {
     console.error('Error creating service in DB with Prisma:', error);
@@ -703,18 +705,10 @@ export const getVideoById = async (id: string): Promise<AppVideo | null> => {
   }
 };
 
-export type VideoCreationData = Omit<PrismaVideo, 'id' | 'createdAt' | 'updatedAt'>;
-
+export type VideoCreationData = Prisma.videoUncheckedCreateInput;
 export const createVideoInDb = async (videoData: VideoCreationData): Promise<AppVideo | null> => {
   try {
-    const newVideo = await prisma.video.create({
-      data: {
-        ...videoData,
-        thumbnailUrl: videoData.thumbnailUrl || null,
-        dataAiHint: videoData.dataAiHint || null,
-        description: videoData.description || null,
-      }
-    });
+    const newVideo = await prisma.video.create({ data: videoData });
     return mapPrismaVideoToAppVideo(newVideo);
   } catch (error) {
     console.error('Error creating video in DB with Prisma:', error);
@@ -778,7 +772,7 @@ export const getSiteSettingsFromDb = async (): Promise<SiteSettings | null> => {
   }
 };
 
-export const updateSiteSettingsInDb = async (settingsData: Partial<Omit<SiteSettings, 'id' | 'updatedAt'>>): Promise<SiteSettings | null> => {
+export const updateSiteSettingsInDb = async (settingsData: Partial<Omit<SiteSettings, 'id' >>): Promise<SiteSettings | null> => {
   try {
     const dataToUpsert = {
       siteName: settingsData.siteName,
@@ -789,10 +783,15 @@ export const updateSiteSettingsInDb = async (settingsData: Partial<Omit<SiteSett
 
     const updatedSettings = await prisma.sitesetting.upsert({
       where: { id: SITE_SETTINGS_ID },
-      update: dataToUpsert,
+      update: {
+        ...dataToUpsert,
+        updatedAt: new Date(),
+      },
+
       create: {
         id: SITE_SETTINGS_ID,
         ...dataToUpsert,
+        updatedAt: new Date(),
       },
     });
     return mapPrismaSiteSettingToAppSiteSetting(updatedSettings);

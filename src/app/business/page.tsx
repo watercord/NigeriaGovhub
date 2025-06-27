@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, LineChart, Building2 } from "lucide-react";
 import Image from "next/image";
+import Business from '@/components/common/FEG.jpeg';
 
 export default function BusinessPage() {
   return (
@@ -20,11 +21,11 @@ export default function BusinessPage() {
           <CardTitle className="font-headline text-2xl">Fostering Economic Growth</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-foreground/90">
-          <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Business and industry concept" 
-            width={800} 
-            height={400} 
+          <Image
+            src={Business}
+            alt="Business and industry concept"
+            width={800}
+            height={400}
             className="w-full rounded-lg mb-6 shadow-md object-cover"
             data-ai-hint="city skyline factory"
           />
@@ -47,14 +48,14 @@ export default function BusinessPage() {
           </p>
         </CardContent>
       </Card>
-      
+
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="card-hover">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><LineChart className="mr-2 h-5 w-5"/> Investment Promotion</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Connect with the Nigerian Investment Promotion Commission (NIPC). (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Connect with the Nigerian Investment Promotion Commission <a href="https://www.nipc.gov.ng/" target="_blank" rel="noopener noreferrer" className="text-lime-600 underline text-base">(NIPC)</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -62,7 +63,7 @@ export default function BusinessPage() {
             <CardTitle className="font-headline text-xl flex items-center"><Building2 className="mr-2 h-5 w-5"/> SME Development</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Find resources from SMEDAN and other agencies supporting SMEs. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Find resources from SMEDAN and other agencies supporting SMEs. <a href="https://smedan.gov.ng/" target="_blank" rel="noopener noreferrer" className="text-lime-600 underline text-base">(SMEDAN)</a></p>
           </CardContent>
         </Card>
       </div>

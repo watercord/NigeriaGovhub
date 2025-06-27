@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Scale } from "lucide-react";
 import Image from "next/image";
+import TAX from "@/components/common/TAX.jpg";
 
 export default function TaxesPage() {
   return (
@@ -20,11 +21,11 @@ export default function TaxesPage() {
           <CardTitle className="font-headline text-2xl">Your Guide to Nigerian Taxes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-foreground/90">
-          <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Taxation concept image" 
-            width={800} 
-            height={400} 
+          <Image
+            src={TAX}
+            alt="Taxation concept image"
+            width={800}
+            height={400}
             className="w-full rounded-lg mb-6 shadow-md object-cover"
             data-ai-hint="calculator documents"
           />
@@ -46,14 +47,14 @@ export default function TaxesPage() {
           </p>
         </CardContent>
       </Card>
-      
+
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="card-hover">
           <CardHeader>
             <CardTitle className="font-headline text-xl">FIRS Portal</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Access the official Federal Inland Revenue Service portal for e-filing and tax information. (Placeholder for link)</p>
+            <p className="text-sm text-foreground/80">Access the official Federal Inland Revenue Service portal for e-filing and tax information. <a href="https://www.firs.gov.ng/" className="text-lime-600 underline text-base">Visit FIRS</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -61,7 +62,7 @@ export default function TaxesPage() {
             <CardTitle className="font-headline text-xl">Tax Calculator</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Estimate your tax liabilities with our helpful tools. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Estimate your tax liabilities with our helpful tools. <a href="https://fiscalreforms.ng/index.php/pit-calculator/" className="text-lime-600 underline text-base">Tax-calculator</a></p>
           </CardContent>
         </Card>
       </div>
