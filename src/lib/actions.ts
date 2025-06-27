@@ -41,6 +41,7 @@ import {
   addNewsCommentToDb,
   toggleNewsLikeInDb,
   getUserByEmail,
+  getFullUserByEmail
 } from './data';
 import type { Feedback as AppFeedback, User as AppUser, Project as AppProject, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, Video as AppVideo, NewsArticleFormData, ProjectFormData, ServiceFormData, VideoFormData, SiteSettings, UserDashboardStats } from '@/types';
 import type { SiteSettingsFormData } from '@/app/dashboard/admin/site-settings/page';
@@ -48,6 +49,7 @@ import prisma from './prisma';
 import { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
+import { createHash } from 'crypto';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { createVerificationToken, getVerificationTokenByToken } from './verification-token';
 import { sendVerificationEmail, sendPasswordResetEmail } from './mail';
@@ -659,6 +661,10 @@ export async function createUserAction(data: { name: string; email: string; pass
       return { success: false, message: "Password is required for credentials signup." };
     }
 
+    const sanitizedEmail = data.email.trim().toLowerCase();
+    const hash = createHash('md5').update(sanitizedEmail).digest('hex');
+    const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=mp`;
+
     await prisma.user.create({
       data: {
         id: crypto.randomUUID(),
@@ -666,6 +672,8 @@ export async function createUserAction(data: { name: string; email: string; pass
         email: data.email,
         password: hashedPassword,
         updated_at: new Date(),
+        image: gravatarUrl,
+
       },
     });
 
@@ -970,3 +978,7 @@ export async function newPasswordAction(password: string, token: string | null):
 
   return { success: "Password updated successfully!" };
 }
+function createHash(arg0: string) {
+  throw new Error('Function not implemented.');
+}
+

@@ -20,9 +20,9 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'ui-avatars.com',
+        hostname: 'www.gravatar.com',
         port: '',
-        pathname: '/api/**',
+        pathname: '/avatar/**',
       },
     ],
   },

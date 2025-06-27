@@ -74,17 +74,20 @@ model newsarticle {
   publishedDate DateTime
   content       String                  @db.Text
   createdAt     DateTime                @default(now())
-  updatedAt     DateTime
+  updatedAt       DateTime                @default(now()) @updatedAt
   bookmarks     bookmarkednewsarticle[]
+  newscomment   newscomment[]
 }
 
 model newscomment {
-  id              String   @id
-  content         String   @db.Text
+  id              String       @id
+  content         String       @db.Text
   user_id         String
   news_article_id String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime     @default(now())
   updatedAt       DateTime
+  newsarticle     newsarticle @relation(fields: [news_article_id], references: [id])
+  newsarticleId   String?
 
   @@index([news_article_id], map: "NewsComment_news_article_id_fkey")
   @@index([user_id], map: "NewsComment_user_id_fkey")
@@ -101,26 +104,26 @@ model newslike {
 }
 
 model project {
-  id                String       @id
-  title             String       @unique(map: "Project_title_key")
+  id                String    @id
+  title             String    @unique(map: "Project_title_key")
   subtitle          String
   ministry_id       String
   state_id          String
-  status            String       @default("Planned")
+  status            String    @default("Planned")
   start_date        DateTime
   expected_end_date DateTime?
   actual_end_date   DateTime?
-  description       String       @db.Text
-  images            String?      @db.LongText
-  videos            String?      @db.LongText
-  impact_stats      String?      @db.LongText
-  budget            Decimal?     @db.Decimal(15, 2)
-  expenditure       Decimal?     @db.Decimal(15, 2)
-  created_at        DateTime     @default(now())
+  description       String    @db.Text
+  images            String?   @db.LongText
+  videos            String?   @db.LongText
+  impact_stats      String?   @db.LongText
+  budget            Decimal?  @db.Decimal(15, 2)
+  expenditure       Decimal?  @db.Decimal(15, 2)
+  created_at        DateTime  @default(now())
   last_updated_at   DateTime
 
-  feedback_list     Feedback[]
-  projecttags       projecttag[]
+  feedback_list Feedback[]
+  projecttags   projecttag[]
 }
 
 model projecttag {
@@ -131,7 +134,6 @@ model projecttag {
   tag     tag     @relation(fields: [tagId], references: [id])
 
   @@id([projectId, tagId])
-
 }
 
 model service {

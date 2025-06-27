@@ -227,9 +227,9 @@ export const createProjectInDb = async (projectData: ProjectCreationData): Promi
         description: projectData.description,
         budget: projectData.budget ?? undefined,
         expenditure: projectData.expenditure ?? undefined,
-        images: projectData.images || [],
-        videos: projectData.videos || [],
-        impact_stats: projectData.impact_stats || [],
+        // images: projectData.images || [],
+        // videos: projectData.videos || [],
+        // impact_stats: projectData.impact_stats || [],
         last_updated_at: new Date(),
         created_at: new Date(),
         projecttags: tagOperations && tagOperations.length > 0 ? {
@@ -299,7 +299,7 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
 
 export const deleteProjectFromDb = async (id: string): Promise<boolean> => {
   try {
-    await prisma.projecttags.deleteMany({ where: { projectId: id }});
+    await prisma.projecttag.deleteMany({ where: { projectId: id }});
     await prisma.Feedback.deleteMany({ where: { project_id: id } });
     await prisma.project.delete({ where: { id } });
     return true;
@@ -318,14 +318,17 @@ export const addFeedbackToProject = async (
   try {
     const savedFeedback = await prisma.Feedback.create({
       data: {
+        id: uuid(), // Generate UUID if your DB doesn't auto-generate
         project_id: projectId,
         user_name: feedbackData.userName,
         comment: feedbackData.comment,
-        rating: feedbackData.rating,
-        sentiment_summary: feedbackData.sentimentSummary,
-        user_id: feedbackData.userId,
-      },
+        rating: feedbackData.rating ?? null, // Ensure null instead of undefined
+        sentiment_summary: feedbackData.sentimentSummary ?? null,
+        user_id: feedbackData.userId ?? null,
+        created_at: new Date() // Add if required
+      } as Prisma.FeedbackUncheckedCreateInput
     });
+
     return mapPrismaFeedbackToAppFeedback(savedFeedback);
   } catch (error) {
     console.error('Error adding feedback to project with Prisma:', error);
@@ -422,24 +425,29 @@ export const getFullUserByEmail = async (email: string) => {
 // --- News Data Functions (Prisma Integrated) ---
 export const getNewsArticleBySlug = async (slug: string, userId?: string): Promise<AppNewsArticle | null> => {
   try {
+    // First get the article with comments
     const newsArticle = await prisma.newsarticle.findUnique({
       where: { slug },
       include: {
-        comments: {
+        newscomment: {
           include: {
             user: {
               select: { id: true, name: true, image: true }
             }
           },
           orderBy: { createdAt: 'desc' }
-        },
-        _count: {
-          select: { likes: true }
         }
       }
     });
+
     if (!newsArticle) return null;
 
+    // Then get the like count separately
+    const likeCount = await prisma.newslike.count({
+      where: { news_article_id: newsArticle.id }
+    });
+
+    // Check if current user liked the article
     let isLiked = false;
     if (userId) {
       const like = await prisma.newslike.findUnique({
@@ -455,9 +463,9 @@ export const getNewsArticleBySlug = async (slug: string, userId?: string): Promi
 
     return {
       ...mapPrismaNewsToAppNews(newsArticle),
-      likeCount: newsArticle._count.likes,
+      likeCount,
       isLikedByUser: isLiked,
-      comments: newsArticle.comments.map(c => ({
+      comments: newsArticle.newscomment.map(c => ({
         id: c.id,
         content: c.content,
         createdAt: c.createdAt,
@@ -522,6 +530,7 @@ export const createNewsArticleInDb = async (newsData: NewsArticleCreationData): 
         ...newsData,
         imageUrl: newsData.imageUrl || null,
         dataAiHint: newsData.dataAiHint || null,
+        id: uuid(), // Generate an ID if your DB doesn't auto-generate
       }
     });
     return {
