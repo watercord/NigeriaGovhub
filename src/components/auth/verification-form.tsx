@@ -75,8 +75,7 @@ export const VerificationForm = () => {
     </div>
   );
 };
-
-VerificationForm.Skeleton = function VerificationFormSkeleton() {
+export const VerificationFormSkeleton = () => {
     return (
         <Card className="w-[400px] shadow-md">
             <CardHeader className="text-center">

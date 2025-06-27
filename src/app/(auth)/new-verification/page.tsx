@@ -1,11 +1,11 @@
 
-import { VerificationForm } from '@/components/auth/verification-form';
+import { VerificationForm, VerificationFormSkeleton } from '@/components/auth/verification-form';
 import { Suspense } from 'react';
 
 const NewVerificationPage = () => {
   return (
     // Suspense is required because VerificationForm uses useSearchParams
-    <Suspense fallback={<VerificationForm.Skeleton />}>
+    <Suspense fallback={< VerificationFormSkeleton />}>
       <VerificationForm />
     </Suspense>
   );
