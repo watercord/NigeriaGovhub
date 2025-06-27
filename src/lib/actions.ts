@@ -166,11 +166,10 @@ export async function addProject(
   state_id: formData.stateId,
   status: formData.status,
   start_date: formData.startDate,
-  expected_end_date: formData.expectedEndDate ?? null,
-  actual_end_date: null, // Explicitly set to null for new projects
+  expected_end_date: formData.expectedEndDate ?? null, // Explicitly set to null for new projects
   description: formData.description,
-  budget: formData.budget ? new Prisma.Decimal(formData.budget) : null,
-  expenditure: formData.expenditure ? new Prisma.Decimal(formData.expenditure) : null,
+  budget: formData.budget ? Number(formData.budget) : undefined,
+ expenditure: formData.expenditure ? Number(formData.expenditure) : undefined,
   tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
   images: [],
   videos: [],
@@ -213,11 +212,14 @@ export async function updateProject(
       start_date: formData.startDate,
       expected_end_date: formData.expectedEndDate,
       description: formData.description,
-      budget: formData.budget !== undefined
-    ? (formData.budget !== null ? new Prisma.Decimal(formData.budget) : null)
+      budget:
+  formData.budget !== undefined && formData.budget !== null
+    ? Number(formData.budget)
     : undefined,
-      expenditure: formData.expenditure !== undefined
-    ? (formData.expenditure !== null ? new Prisma.Decimal(formData.expenditure) : null)
+
+expenditure:
+  formData.expenditure !== undefined && formData.expenditure !== null
+    ? Number(formData.expenditure)
     : undefined,
       tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
     };
@@ -385,15 +387,17 @@ export async function addService(
     }
 
     const dataToSave: ServiceCreationData = {
+      id: crypto.randomUUID(),
+      updatedAt: new Date(),
       title: serviceData.title,
       slug: serviceData.slug,
       // updatedAt: serviceData.updatedAt,
       summary: serviceData.summary,
       category: serviceData.category,
-      link: serviceData.link ?? null,
-      imageUrl: serviceData.imageUrl ?? null,
+      link: serviceData.link,
+      imageUrl: serviceData.imageUrl,
       dataAiHint: serviceData.dataAiHint ?? null,
-      iconName: serviceData.iconName ?? null,
+      iconName: serviceData.iconName,
     };
 
     const newService = await saveServiceToDb(dataToSave);
@@ -503,6 +507,8 @@ export async function addVideo(
 ): Promise<ActionResult<AppVideo>> {
   try {
     const dataToSave: VideoCreationData = {
+      id: crypto.randomUUID(),
+      updatedAt: new Date(),
       title: videoData.title,
       url: videoData.url,
       thumbnailUrl: videoData.thumbnailUrl ?? null,

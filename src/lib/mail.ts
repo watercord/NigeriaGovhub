@@ -14,10 +14,10 @@ export const sendVerificationEmail = async (email: string, token: string) => {
   console.log("---------------------------------------");
 
   // When you have a Resend API key and a verified domain, uncomment this block
-  /*
+
   try {
     await resend.emails.send({
-      from: "onboarding@resend.dev", // Replace with your verified domain, e.g., "noreply@yourdomain.com"
+      from: "nigeriagovhub.com", // Replace with your verified domain, e.g., "noreply@yourdomain.com"
       to: email,
       subject: "NigeriaGovHub: Verify your email address",
       html: `<p>Welcome to NigeriaGovHub! Click the link below to verify your email address and complete your registration:</p><p><a href="${verificationLink}">Verify Email</a></p>`,
@@ -26,7 +26,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     console.error("Failed to send verification email:", error);
     // You might want to handle this error more gracefully
   }
-  */
+
 };
 
 export const sendPasswordResetEmail = async (email: string, token: string) => {
@@ -39,7 +39,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
   console.log("-----------------------------------------");
 
   // When you have a Resend API key and a verified domain, uncomment this block
-  /*
+
   try {
     await resend.emails.send({
       from: "onboarding@resend.dev", // Replace with your verified domain
@@ -50,5 +50,5 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
   } catch (error) {
     console.error("Failed to send password reset email:", error);
   }
-  */
+
 };

@@ -904,6 +904,7 @@ export const isNewsArticleBookmarked = async (userId: string, articleId: string)
 export const addNewsBookmarkInDb = async (userId: string, articleId: string) => {
   return prisma.bookmarkednewsarticle.create({
     data: {
+      id: uuid(), // Generate UUID for the new bookmark
       user_id: userId,
       news_article_id: articleId,
     },
@@ -925,9 +926,11 @@ export const removeNewsBookmarkInDb = async (userId: string, articleId: string) 
 export const addNewsCommentToDb = async (articleId: string, userId: string, content: string): Promise<PrismaNewsComment> => {
   return prisma.newscomment.create({
     data: {
+      id: uuid(), // Generate UUID for the new comment
       content,
       news_article_id: articleId,
       user_id: userId,
+      updatedAt: new Date(), // Add required updatedAt field
     },
   });
 };
@@ -950,6 +953,7 @@ export const toggleNewsLikeInDb = async (articleId: string, userId: string): Pro
   } else {
     await prisma.newslike.create({
       data: {
+        id: uuid(), // Generate UUID for the new like
         user_id: userId,
         news_article_id: articleId,
       },
