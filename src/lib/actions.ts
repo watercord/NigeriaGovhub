@@ -497,6 +497,7 @@ export async function fetchAllProjectsAction(): Promise<AppProject[]> {
   }
 }
 
+
 export async function addVideo(
   videoData: VideoFormData
 ): Promise<ActionResult<AppVideo>> {
@@ -507,8 +508,7 @@ export async function addVideo(
       thumbnailUrl: videoData.thumbnailUrl ?? null,
       dataAiHint: videoData.dataAiHint ?? null,
       description: videoData.description ?? null,
-      createdAt:
-    };
+    }
 
     const newVideo = await saveVideoToDb(dataToSave);
     if (!newVideo) {
