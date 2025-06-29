@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart } from "lucide-react";
 import Image from "next/image";
-import HEALTH from "@/components/common/Health.png";
+import HEALTH from "@/components/common/H.jpeg";
 export default function HealthPage() {
   return (
     <div className="space-y-8 py-8">

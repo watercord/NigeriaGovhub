@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Globe, Mountain, Trees } from "lucide-react";
 import Image from "next/image";
+import Tourism from "@/components/common/visit-nigria.jpeg";
 
 export default function TourismPage() {
   return (
@@ -20,11 +21,11 @@ export default function TourismPage() {
           <CardTitle className="font-headline text-2xl">Experience the Beauty of Nigeria</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-foreground/90">
-          <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Nigerian landscape" 
-            width={800} 
-            height={400} 
+          <Image
+            src={Tourism}
+            alt="Nigerian landscape"
+            width={800}
+            height={400}
             className="w-full rounded-lg mb-6 shadow-md object-cover"
             data-ai-hint="beautiful landscape"
           />
@@ -47,14 +48,14 @@ export default function TourismPage() {
           </p>
         </CardContent>
       </Card>
-      
+
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="card-hover">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><Mountain className="mr-2 h-5 w-5"/> National Parks</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Discover Nigeria's protected natural areas and wildlife. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Discover Nigeria's protected natural areas and wildlife. <a href="http://nigeriaparkservice.gov.ng/" className="text-lime-600 underline text-base">Visit the National Parks</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -62,7 +63,7 @@ export default function TourismPage() {
             <CardTitle className="font-headline text-xl flex items-center"><Trees className="mr-2 h-5 w-5"/> Ecotourism Initiatives</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Learn about sustainable travel options and community-based tourism projects. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Learn about sustainable travel options and community-based tourism projects. <a href="https://ntda.gov.ng/about.us.php" className="text-lime-600 underline text-base">Visit NTDA</a></p>
           </CardContent>
         </Card>
       </div>

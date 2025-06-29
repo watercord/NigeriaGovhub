@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Palette, BookOpen, Award } from "lucide-react";
 import Image from "next/image";
+import Culture from "@/components/common/Cul2.jpg";
 
 export default function CulturePage() {
   return (
@@ -20,11 +21,11 @@ export default function CulturePage() {
           <CardTitle className="font-headline text-2xl">Celebrating Nigeria's Diversity</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-foreground/90">
-          <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Nigerian cultural display" 
-            width={800} 
-            height={400} 
+          <Image
+            src={Culture}
+            alt="Nigerian cultural display"
+            width={800}
+            height={400}
             className="w-full rounded-lg mb-6 shadow-md object-cover"
             data-ai-hint="cultural dance"
           />
@@ -47,14 +48,14 @@ export default function CulturePage() {
           </p>
         </CardContent>
       </Card>
-      
+
       <div className="grid md:grid-cols-3 gap-6">
         <Card className="card-hover">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><BookOpen className="mr-2 h-5 w-5"/> National Archives</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Explore historical documents and records. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Explore historical documents and records. <a href="https://nationalarchivesofnigeria.org.ng/" className="text-lime-600 underline text-base">National Archives</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -62,7 +63,7 @@ export default function CulturePage() {
             <CardTitle className="font-headline text-xl flex items-center"><Palette className="mr-2 h-5 w-5"/> Arts Council</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Information on grants and support for artists. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Information on grants and support for artists. <a href="https://ncac.gov.ng/" className="text-lime-600 underline text-base">Arts Council</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -70,7 +71,7 @@ export default function CulturePage() {
             <CardTitle className="font-headline text-xl flex items-center"><Award className="mr-2 h-5 w-5"/> Sports Federations</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Connect with various national sports bodies. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Connect with various national sports bodies. Visit the <a href="https://nigeriaolympic.org/olympic-sports-federations/" className="text-lime-600 underline text-base">Nigeria Olympic Commitee</a> to see the sports Federations in Nigeria.</p>
           </CardContent>
         </Card>
       </div>

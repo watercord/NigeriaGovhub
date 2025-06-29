@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Award, Bike, Medal } from "lucide-react";
 import Image from "next/image";
+import sports from "@/components/common/Sports.jpg";
 
 export default function SportsPage() {
   return (
@@ -20,11 +21,11 @@ export default function SportsPage() {
           <CardTitle className="font-headline text-2xl">A Nation of Sporting Excellence</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-foreground/90">
-          <Image 
-            src="https://placehold.co/800x400.png" 
-            alt="Nigerian athletes celebrating" 
-            width={800} 
-            height={400} 
+          <Image
+            src={sports}
+            alt="Nigerian athletes celebrating"
+            width={800}
+            height={400}
             className="w-full rounded-lg mb-6 shadow-md object-cover"
             data-ai-hint="athletes victory"
           />
@@ -46,14 +47,14 @@ export default function SportsPage() {
           </p>
         </CardContent>
       </Card>
-      
+
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="card-hover">
           <CardHeader>
             <CardTitle className="font-headline text-xl flex items-center"><Bike className="mr-2 h-5 w-5"/> National Sports Festival</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Learn about Nigeria's foremost multi-sport event. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Learn about Nigeria's foremost multi-sport event. <a href="https://www.nigeriasportsfestival.org.ng/" className="text-lime-600 underline text-base">Visit the National Sports Festival</a></p>
           </CardContent>
         </Card>
         <Card className="card-hover">
@@ -61,7 +62,7 @@ export default function SportsPage() {
             <CardTitle className="font-headline text-xl flex items-center"><Medal className="mr-2 h-5 w-5"/> Olympic Achievements</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-foreground/80">Highlighting Nigeria's participation and successes at the Olympic Games. (Placeholder)</p>
+            <p className="text-sm text-foreground/80">Highlighting Nigeria's participation and successes at the Olympic Games. <a href="https://nigeriaolympic.org/" className="text-lime-600 underline text-base">See Nigeria's Olympic History</a></p>
           </CardContent>
         </Card>
       </div>
