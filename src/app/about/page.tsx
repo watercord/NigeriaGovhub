@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShieldCheck, Target, Eye } from "lucide-react";
 import Image from "next/image";
+import About from "@/components/common/Ab.jpg";
 
 export default function AboutPage() {
   return (
@@ -24,10 +25,10 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="rounded-lg overflow-hidden shadow-lg">
-            <Image 
-              src="https://placehold.co/600x400.png" 
-              alt="Diverse group of people collaborating" 
-              width={600} 
+            <Image
+              src={About}
+              alt="Diverse group of people collaborating"
+              width={600}
               height={400}
               className="w-full h-auto object-cover"
               data-ai-hint="people collaboration"
@@ -76,7 +77,7 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
-      
+
       <section>
         <h2 className="font-headline text-3xl font-semibold text-foreground mb-4">Our Commitment</h2>
         <p className="text-foreground/90 leading-relaxed">
