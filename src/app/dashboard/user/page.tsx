@@ -144,40 +144,60 @@ export default function UserDashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-            <CardTitle className="font-headline">{t.quick_actions}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Button variant="outline" asChild className="button-hover justify-start p-6 text-left h-auto">
-                <Link href="/dashboard/user/profile" className="flex items-start space-x-3">
-                    <Settings className="h-6 w-6 text-primary mt-1"/>
-                    <div>
-                        <p className="font-semibold">{t.manage_profile}</p>
-                        <p className="text-xs text-muted-foreground">{t.manage_profile_description}</p>
-                    </div>
-                </Link>
-            </Button>
-             <Button variant="outline" asChild className="button-hover justify-start p-6 text-left h-auto">
-                <Link href="/dashboard/user/feedback" className="flex items-start space-x-3">
-                    <FileText className="h-6 w-6 text-primary mt-1"/>
-                    <div>
-                        <p className="font-semibold">{t.view_my_feedback}</p>
-                        <p className="text-xs text-muted-foreground">{t.view_my_feedback_description}</p>
-                    </div>
-                </Link>
-            </Button>
-            <Button variant="default" asChild className="button-hover justify-start p-6 text-left h-auto sm:col-span-2 lg:col-span-1">
-                <Link href="/projects" className="flex items-start space-x-3">
-                    <MessageSquare className="h-6 w-6 mt-1"/>
-                    <div>
-                        <p className="font-semibold">{t.explore_projects}</p>
-                        <p className="text-xs ">{t.explore_projects_description}</p>
-                    </div>
-                </Link>
-            </Button>
-        </CardContent>
-      </Card>
+ <Card className="shadow-xl rounded-2xl border border-muted bg-background/80 backdrop-blur-sm">
+  <CardHeader className="pb-2">
+    <CardTitle className="font-headline text-2xl">{t.quick_actions}</CardTitle>
+  </CardHeader>
+
+  <CardContent className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {/* Action: Manage Profile */}
+    <Button
+      variant="outline"
+      asChild
+      className="group p-6 h-full text-left rounded-xl border hover:shadow-md transition-all duration-300"
+    >
+      <Link href="/dashboard/user/profile" className="flex items-start gap-4 w-full">
+        <Settings className="h-8 w-8 text-primary group-hover:scale-110 transition-transform duration-200 mt-1 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-lg font-semibold truncate">{t.manage_profile}</p>
+          <p className="text-sm text-muted-foreground truncate">{t.manage_profile_description}</p>
+        </div>
+      </Link>
+    </Button>
+
+    {/* Action: View Feedback */}
+    <Button
+      variant="outline"
+      asChild
+      className="group p-6 h-full text-left rounded-xl border hover:shadow-md transition-all duration-300"
+    >
+      <Link href="/dashboard/user/feedback" className="flex items-start gap-4 w-full">
+        <FileText className="h-8 w-8 text-primary group-hover:scale-110 transition-transform duration-200 mt-1 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-lg font-semibold truncate">{t.view_my_feedback}</p>
+          <p className="text-sm text-muted-foreground truncate">{t.view_my_feedback_description}</p>
+        </div>
+      </Link>
+    </Button>
+
+    {/* Action: Explore Projects */}
+    <Button
+      variant="default"
+      asChild
+      className="group p-6 h-full text-left rounded-xl sm:col-span-2 lg:col-span-1 hover:shadow-lg transition-all duration-300"
+    >
+      <Link href="/projects" className="flex items-start gap-4 w-full">
+        <MessageSquare className="h-8 w-8 text-white group-hover:scale-110 transition-transform duration-200 mt-1 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-lg font-semibold text-white truncate">{t.explore_projects}</p>
+          <p className="text-sm text-white/80 truncate">{t.explore_projects_description}</p>
+        </div>
+      </Link>
+    </Button>
+  </CardContent>
+</Card>
+
+
     </div>
   );
 }

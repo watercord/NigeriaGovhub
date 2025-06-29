@@ -15,7 +15,7 @@ export function FeedbackList({ feedbackItems }: FeedbackListProps) {
   }
 
   // Sort feedback by newest first
-  const sortedFeedback = [...feedbackItems].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const sortedFeedback = [...feedbackItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="space-y-4">

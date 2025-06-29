@@ -1,8 +1,8 @@
 
 "use client"
 
-import { useEffect, useState } from 'react'; 
-import { getProjectById } from '@/lib/data'; 
+import { useEffect, useState } from 'react';
+import { getProjectByIdAction } from '@/lib/actions';
 import type { Project, Feedback as FeedbackType } from '@/types'; // Renamed Feedback to FeedbackType
 import { ImageGallery } from '@/components/projects/image-gallery';
 import { FeedbackForm } from '@/components/projects/feedback-form';
@@ -21,7 +21,7 @@ export default function ProjectDetailPage() {
   const params = useParams(); // Get params using hook
   const id = params.id as string; // Assuming id is always a string
 
-  const [project, setProject] = useState<Project | null>(null); 
+  const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,31 +30,29 @@ export default function ProjectDetailPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const fetchedProject = await getProjectById(id);
+      const fetchedProject = await getProjectByIdAction(id);
       if (fetchedProject) {
         setProject(fetchedProject);
       } else {
-        notFound(); // Or set an error state
+        notFound();
       }
     } catch (err) {
       console.error("Failed to fetch project:", err);
       setError("Failed to load project data. Please try again later.");
-      // notFound(); // Or handle error differently
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchProjectData();
-  }, [id]); 
+  }, [id]);
 
   const refreshFeedback = () => {
-    // Re-fetch the whole project to get updated feedback
-    fetchProjectData(); 
+    fetchProjectData();
   };
 
-  if (isLoading) { 
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 space-y-10">
         <Skeleton className="h-12 w-3/4 mb-2" />
@@ -81,13 +79,11 @@ export default function ProjectDetailPage() {
   if (error) {
     return <div className="container mx-auto px-4 py-8 text-center text-destructive">{error}</div>;
   }
-  
+
   if (!project) {
-    // This case should ideally be handled by notFound() in fetchProjectData,
-    // but as a fallback:
-    return notFound(); 
+    return notFound();
   }
-  
+
   const statusColors: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' } = {
     Ongoing: 'secondary',
     Completed: 'default',
@@ -155,7 +151,7 @@ export default function ProjectDetailPage() {
               </CardContent>
             </Card>
           )}
-          
+
            {project.tags && project.tags.length > 0 && (
             <Card>
               <CardHeader>
@@ -233,3 +229,5 @@ export default function ProjectDetailPage() {
     </div>
   );
 }
+
+    

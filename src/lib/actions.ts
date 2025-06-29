@@ -1,6 +1,6 @@
 
 "use server";
-
+import 'dotenv/config';
 import { revalidatePath } from 'next/cache';
 import { summarizeFeedbackSentiment, type SummarizeFeedbackSentimentInput } from '@/ai/flows/summarize-feedback-sentiment';
 import {
@@ -48,7 +48,7 @@ import type { SiteSettingsFormData } from '@/app/dashboard/admin/site-settings/p
 import prisma from './prisma';
 import { Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { getServerSession } from 'next-auth';
+import { getServerSession  } from 'next-auth';
 import { createHash } from 'crypto';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { createVerificationToken, getVerificationTokenByToken } from './verification-token';
@@ -171,9 +171,8 @@ export async function addProject(
   budget: formData.budget ? Number(formData.budget) : undefined,
  expenditure: formData.expenditure ? Number(formData.expenditure) : undefined,
   tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
-  images: [],
-  videos: [],
-  impact_stats: [],
+  // images: [],
+  // impact_stats: [],
 };
 
     const newProject = await saveProjectToDb(dataToSave);
@@ -260,6 +259,17 @@ export async function deleteProject(id: string): Promise<ActionResult> {
   } catch (error) {
     console.error('Error deleting project:', error);
     return { success: false, message: 'An unexpected error occurred while deleting the project.', errorDetails: error instanceof Error ? error.stack : undefined };
+  }
+}
+
+
+export async function getProjectByIdAction(id: string): Promise<AppProject | null> {
+  try {
+    const project = await getProjectById(id);
+    return project;
+  } catch (error) {
+    console.error(`Error in getProjectByIdAction for ID ${id}:`, error);
+    return null;
   }
 }
 
@@ -387,8 +397,8 @@ export async function addService(
     }
 
     const dataToSave: ServiceCreationData = {
-      id: crypto.randomUUID(),
-      updatedAt: new Date(),
+      // id: crypto.randomUUID(),
+      // updatedAt: new Date(),
       title: serviceData.title,
       slug: serviceData.slug,
       // updatedAt: serviceData.updatedAt,
@@ -507,8 +517,6 @@ export async function addVideo(
 ): Promise<ActionResult<AppVideo>> {
   try {
     const dataToSave: VideoCreationData = {
-      id: crypto.randomUUID(),
-      updatedAt: new Date(),
       title: videoData.title,
       url: videoData.url,
       thumbnailUrl: videoData.thumbnailUrl ?? null,
@@ -650,7 +658,7 @@ export async function createUserAction(data: { name: string; email: string; pass
   try {
     let existingUser;
     try {
-       existingUser = await getUserByEmail(data.email);
+       existingUser = await getFullUserByEmail(data.email);
     } catch (e: any) {
         if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2020') {
             return { success: false, message: "An account with this email already exists but has a data issue. Please try logging in with your original method (e.g., Google) or contact support." };
@@ -986,7 +994,57 @@ export async function newPasswordAction(password: string, token: string | null):
 
   return { success: "Password updated successfully!" };
 }
-// function createHash(arg0: string) {
-//   throw new Error('Function not implemented.');
-// }
+
+async function getProjectById(id: string): Promise<AppProject | null> {
+  try {
+    const dbProject = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        feedback_list: true
+      }
+    });
+
+    if (!dbProject) return null;
+
+    // Convert Prisma project to AppProject interface
+    return {
+      ...dbProject,
+      ministry: { id: '', name: '' }, // Simplified for now
+      state: { id: '', name: '' }, // Simplified for now
+      startDate: dbProject.start_date,
+      expectedEndDate: dbProject.expected_end_date,
+      impactStats: dbProject.impact_stats ? JSON.parse(dbProject.impact_stats) : [],
+      lastUpdatedAt: dbProject.last_updated_at,
+      tags: [], // Placeholder - need to implement proper fetching
+      status: dbProject.status as 'Planned' | 'Ongoing' | 'Completed' | 'On Hold',
+      // Initialize images array with proper type
+      images: dbProject.images ? JSON.parse(dbProject.images).map((img: any) => ({
+        url: img.url || '',
+        alt: img.alt || '',
+        dataAiHint: img.dataAiHint || undefined
+      })) : [],
+      // Initialize videos array with proper type
+      videos: dbProject.videos ? JSON.parse(dbProject.videos).map((video: any) => ({
+        id: video.id || '',
+        title: video.title || '',
+        url: video.url || '',
+        thumbnailUrl: video.thumbnailUrl || null,
+        dataAiHint: video.dataAiHint || null,
+        description: video.description || null,
+        createdAt: new Date(video.createdAt),
+        updatedAt: new Date(video.updatedAt)
+      })) : undefined,
+      // Convert Decimal budget and expenditure to number
+      budget: dbProject.budget ? Number(dbProject.budget) : null,
+      expenditure: dbProject.expenditure ? Number(dbProject.expenditure) : null,
+      feedback: dbProject.feedback_list.map(feedback => ({
+        ...feedback,
+        created_at: feedback.created_at.toISOString()
+      }))
+    };
+  } catch (error) {
+    console.error(`Error fetching project by ID ${id}:`, error);
+    return null;
+  }
+}
 

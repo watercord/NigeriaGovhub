@@ -1,11 +1,9 @@
 
-import type { Ministry, State, Project as AppProject, Feedback as AppFeedback, ImpactStat, Video as AppVideo, User as AppUser, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, ProjectFormData, SiteSettings, UserDashboardStats, NewsComment } from '@/types';
-import type * as LucideIcons from 'lucide-react';
-import { TrendingUp as DefaultIcon, Server as DefaultServiceIcon } from 'lucide-react'; // Import specific icons for default
+import type { Ministry, State, Project as AppProject, Feedback as AppFeedback, ImpactStat, Video as AppVideo, User as AppUser, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, SiteSettings, UserDashboardStats, NewsComment } from '@/types';
 import prisma from './prisma';
 import { v4 as uuid } from 'uuid';
-import type { project as PrismaProject, Feedback as PrismaFeedback, user as PrismaUser, newsarticle as PrismaNewsArticle, service as PrismaService, video as PrismaVideo, sitesetting as PrismaSiteSetting, Prisma, projecttag as PrismaProjectTag, tag as PrismaTag, newscomment as PrismaNewsComment } from '@prisma/client';
-
+import type { project as PrismaProject, Feedback as PrismaFeedback, user as PrismaUser, newsarticle as PrismaNewsArticle, service as PrismaService, video as PrismaVideo, sitesetting as PrismaSiteSetting, Prisma, tag as PrismaTag } from '@prisma/client';
+import { LucideIcon } from 'lucide-react';
 
 // --- Mock Data for Ministries and States (These will eventually move to DB) ---
 export const ministries: Ministry[] = [
@@ -31,40 +29,72 @@ export const states: State[] = [
 
 
 // --- Helper function to map Prisma Project to AppProject ---
-const mapPrismaProjectToAppProject = (prismaProject: PrismaProject & { feedback_list?: PrismaFeedback[], projecttag?: { tag: PrismaTag }[] }): AppProject => {
-  const ministry = ministries.find(m => m.id === prismaProject.ministry_id) || { id: prismaProject.ministry_id || 'unknown_ministry', name: prismaProject.ministry_id || 'Unknown Ministry' };
-  const state = states.find(s => s.id === prismaProject.state_id) || { id: prismaProject.state_id || 'unknown_state', name: prismaProject.state_id || 'Unknown State' };
+const mapPrismaProjectToAppProject = (
+    prismaProject: PrismaProject & {
+        feedback_list?: PrismaFeedback[];
+        projecttags?: { tag: PrismaTag }[];
+    }
+): AppProject => {
+    const ministry = ministries.find((m) => m.id === prismaProject.ministry_id) || {
+        id: prismaProject.ministry_id || 'unknown_ministry',
+        name: prismaProject.ministry_id || 'Unknown Ministry',
+    };
+    const state = states.find((s) => s.id === prismaProject.state_id) || {
+        id: prismaProject.state_id || 'unknown_state',
+        name: prismaProject.state_id || 'Unknown State',
+    };
 
-  const mappedImpactStats = (prismaProject.impact_stats as unknown as ImpactStat[] || []).map(stat => {
-    const Lucide = require('lucide-react'); // Dynamically require for safety
-    const IconComponent = stat.iconName && Lucide[stat.iconName as keyof typeof LucideIcons] ? Lucide[stat.iconName as keyof typeof LucideIcons] as React.ElementType : DefaultIcon;
-    return { ...stat, icon: IconComponent };
-  });
+    // Safely parse JSON array fields, defaulting to an empty array
+    const safeParseJsonArray = (field: Prisma.JsonValue | null | undefined): any[] => {
+        if (field && Array.isArray(field)) {
+            return field as any[];
+        }
+        return [];
+    };
 
-   const appProjectTags = prismaProject.projecttag?.map(pt => pt.tag.name) || [];
+    const images = safeParseJsonArray(prismaProject.images) as { url: string; alt: string; dataAiHint?: string }[];
+    const videos = safeParseJsonArray(prismaProject.videos) as AppVideo[];
+    const impactStats = safeParseJsonArray(prismaProject.impact_stats) as ImpactStat[];
+    const appProjectTags = prismaProject.projecttags?.map((pt) => pt.tag.name) || [];
 
-  return {
-    id: prismaProject.id,
-    title: prismaProject.title,
-    subtitle: prismaProject.subtitle,
-    ministry,
-    state,
-    status: prismaProject.status as AppProject['status'],
-    startDate: new Date(prismaProject.start_date),
-    expectedEndDate: prismaProject.expected_end_date ? new Date(prismaProject.expected_end_date) : undefined,
-    actualEndDate: prismaProject.actual_end_date ? new Date(prismaProject.actual_end_date) : undefined,
-    description: prismaProject.description,
-    images: (prismaProject.images as unknown as { url: string; alt: string, dataAiHint?: string }[] || []),
-    videos: (prismaProject.videos as unknown as AppVideo[] || []),
-    impactStats: mappedImpactStats,
-    budget: prismaProject.budget ? Number(prismaProject.budget) : undefined,
-    expenditure: prismaProject.expenditure ? Number(prismaProject.expenditure) : undefined,
-    tags: appProjectTags,
-    lastUpdatedAt: new Date(prismaProject.last_updated_at),
-    feedback: prismaProject.feedback_list?.map(mapPrismaFeedbackToAppFeedback) || [],
-    ministry_id: prismaProject.ministry_id,
-    state_id: prismaProject.state_id,
-  };
+    const safeCreateDate = (date: Date | null | undefined): Date | undefined => {
+        if (!date) return undefined;
+        const d = new Date(date);
+        return isNaN(d.getTime()) ? undefined : d;
+    };
+
+    // Ensure required dates are valid
+    const startDate = new Date(prismaProject.start_date);
+    if (isNaN(startDate.getTime())) {
+        throw new Error(`Invalid start_date for project ID ${prismaProject.id}`);
+    }
+    const lastUpdatedAt = new Date(prismaProject.last_updated_at);
+     if (isNaN(lastUpdatedAt.getTime())) {
+        throw new Error(`Invalid last_updated_at for project ID ${prismaProject.id}`);
+    }
+
+    return {
+        id: prismaProject.id,
+        title: prismaProject.title,
+        subtitle: prismaProject.subtitle,
+        ministry,
+        state,
+        status: prismaProject.status as AppProject['status'],
+        startDate: startDate,
+        expectedEndDate: safeCreateDate(prismaProject.expected_end_date),
+        actualEndDate: safeCreateDate(prismaProject.actual_end_date),
+        description: prismaProject.description,
+        images: images,
+        videos: videos,
+        impactStats: impactStats,
+        budget: prismaProject.budget ? Number(prismaProject.budget) : undefined,
+        expenditure: prismaProject.expenditure ? Number(prismaProject.expenditure) : undefined,
+        tags: appProjectTags,
+        lastUpdatedAt: lastUpdatedAt,
+        feedback: prismaProject.feedback_list?.map(mapPrismaFeedbackToAppFeedback) || [],
+        ministry_id: prismaProject.ministry_id,
+        state_id: prismaProject.state_id,
+    };
 };
 
 // --- Helper function to map Prisma Feedback to AppFeedback ---
@@ -113,16 +143,12 @@ const mapPrismaNewsToAppNews = (prismaNews: PrismaNewsArticle): Omit<AppNewsArti
 
 // --- Helper function to map Prisma Service to AppServiceItem ---
 const mapPrismaServiceToAppServiceItem = (prismaService: PrismaService): AppServiceItem => {
-  const Lucide = require('lucide-react');
-  const IconComponent = prismaService.iconName && Lucide[prismaService.iconName as keyof typeof LucideIcons] ? Lucide[prismaService.iconName as keyof typeof LucideIcons] as React.ElementType : DefaultServiceIcon;
-
   return {
     id: prismaService.id,
     slug: prismaService.slug,
     title: prismaService.title,
     summary: prismaService.summary,
-    iconName: prismaService.iconName as keyof typeof LucideIcons,
-    icon: IconComponent,
+    iconName: prismaService.iconName as (keyof typeof LucideIcon | null),
     link: prismaService.link,
     category: prismaService.category,
     imageUrl: prismaService.imageUrl,
@@ -175,7 +201,7 @@ export const getProjectById = async (id: string): Promise<AppProject | null> => 
     return mapPrismaProjectToAppProject(projectWithDetails);
   } catch (error) {
     console.error('Error fetching project by ID with Prisma:', error);
-    return null;
+    throw error;
   }
 };
 
@@ -207,52 +233,39 @@ export type ProjectCreationData = {
   description: string;
   budget?: number;
   expenditure?: number | null;
-  tags?: string[]; // These are tag *names*
-  images?: any;
-  videos?: any;
-  impact_stats?: any;
+  tags?: string[];
 };
 
 export const createProjectInDb = async (projectData: ProjectCreationData): Promise<AppProject | null> => {
   try {
-    const tagOperations = projectData.tags?.map(tagName => ({
-      tag: {
-        connectOrCreate: {
-          where: { name: tagName },
-          create: { name: tagName }
-        }
-      }
-    }));
+    const { tags, ...scalarData } = projectData;
+
+    const baseCreateData: Prisma.projectCreateInput = {
+      ...scalarData,
+      id: uuid(),
+      last_updated_at: new Date(),
+      created_at: new Date(),
+      start_date: new Date(scalarData.start_date),
+      images: '',
+      videos: '',
+      impact_stats: '',
+    };
+
+    if (tags && tags.length > 0) {
+      baseCreateData.projecttags = {
+        create: tags.map(tagName => ({
+          tag: {
+            connectOrCreate: {
+              where: { name: tagName },
+              create: { name: tagName },
+            },
+          },
+        })),
+      };
+    }
 
     const newProject = await prisma.project.create({
-      data: {
-        id: uuid(), // Generate an ID if your DB doesn't auto-generate
-        title: projectData.title,
-        subtitle: projectData.subtitle,
-        ministry_id: projectData.ministry_id,
-        state_id: projectData.state_id,
-        status: projectData.status,
-        start_date: projectData.start_date,
-        expected_end_date: projectData.expected_end_date,
-        description: projectData.description,
-        budget: projectData.budget ?? undefined,
-        expenditure: projectData.expenditure ?? undefined,
-        // images: projectData.images || [],
-        // videos: projectData.videos || [],
-        // impact_stats: projectData.impact_stats || [],
-        last_updated_at: new Date(),
-        created_at: new Date(),
-        projecttags: tagOperations && tagOperations.length > 0 ? {
-          create: tagOperations.map(tagOp => ({
-            tag: {
-              connectOrCreate: {
-                where: { name: (tagOp.tag.connectOrCreate.where as { name: string }).name },
-                create: { name: (tagOp.tag.connectOrCreate.create as { name: string }).name }
-              }
-            }
-          }))
-        } : undefined
-      },
+      data: baseCreateData,
       include: {
         projecttags: { select: { tag: true } }
       }
@@ -279,7 +292,7 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
 
         if (tags !== undefined) {
             baseUpdateData.projecttags = {
-                deleteMany: {}, // Delete all existing relations first
+                deleteMany: {},
                 create: tags.map(tagName => ({
                     tag: {
                         connectOrCreate: {
@@ -328,14 +341,14 @@ export const addFeedbackToProject = async (
   try {
     const savedFeedback = await prisma.Feedback.create({
       data: {
-        id: uuid(), // Generate UUID if your DB doesn't auto-generate
+        id: uuid(),
         project_id: projectId,
         user_name: feedbackData.userName,
         comment: feedbackData.comment,
-        rating: feedbackData.rating ?? null, // Ensure null instead of undefined
+        rating: feedbackData.rating ?? null,
         sentiment_summary: feedbackData.sentimentSummary ?? null,
         user_id: feedbackData.userId ?? null,
-        created_at: new Date() // Add if required
+        created_at: new Date()
       } as Prisma.FeedbackUncheckedCreateInput
     });
 
@@ -383,16 +396,26 @@ export async function getUsers(): Promise<AppUser[]> {
 
 export async function deleteUserById(userId: string): Promise<{ success: boolean; error?: any }> {
   try {
-     await prisma.Feedback.updateMany({
+    // Rely on Prisma schema `onDelete` behavior for cascading deletes if set up.
+    // If not, manually delete related records.
+    await prisma.newscomment.deleteMany({ where: { user_id: userId } });
+    await prisma.newslike.deleteMany({ where: { user_id: userId } });
+    await prisma.bookmarkednewsarticle.deleteMany({ where: { user_id: userId } });
+    await prisma.bookmarkedproject.deleteMany({ where: { user_id: userId } });
+    await prisma.account.deleteMany({ where: { userId: userId } });
+    await prisma.session.deleteMany({ where: { userId: userId } });
+    await prisma.Feedback.updateMany({
       where: { user_id: userId },
       data: { user_id: null },
     });
+
     await prisma.user.delete({
       where: { id: userId },
     });
+
     return { success: true };
   } catch (error) {
-    console.error('Error deleting user profile or disassociating feedback with Prisma:', error);
+    console.error('Error deleting user profile and related data with Prisma:', error);
     return { success: false, error };
   }
 }
@@ -417,7 +440,6 @@ export async function getUserByEmail(email: string): Promise<AppUser | null> {
         return user ? mapPrismaUserToAppUser(user) : null;
     } catch (error) {
         console.error(`Error fetching user by email ${email} from DB with Prisma:`, error);
-        // Throw the error so it can be caught by the action
         throw error;
     }
 }
@@ -433,9 +455,12 @@ export const getFullUserByEmail = async (email: string) => {
 
 
 // --- News Data Functions (Prisma Integrated) ---
+export type NewsArticleCreationData = Omit<Prisma.newsarticleCreateInput, 'id' | 'createdAt' | 'updatedAt' >;
+export type ServiceCreationData = Omit<Prisma.serviceCreateInput, 'id' | 'createdAt' | 'updatedAt'>;
+export type VideoCreationData = Omit<Prisma.videoCreateInput, 'id' | 'createdAt' | 'updatedAt'>;
+
 export const getNewsArticleBySlug = async (slug: string, userId?: string): Promise<AppNewsArticle | null> => {
   try {
-    // First get the article with comments
     const newsArticle = await prisma.newsarticle.findUnique({
       where: { slug },
       include: {
@@ -452,12 +477,10 @@ export const getNewsArticleBySlug = async (slug: string, userId?: string): Promi
 
     if (!newsArticle) return null;
 
-    // Then get the like count separately
     const likeCount = await prisma.newslike.count({
       where: { news_article_id: newsArticle.id }
     });
 
-    // Check if current user liked the article
     let isLiked = false;
     if (userId) {
       const like = await prisma.newslike.findUnique({
@@ -499,7 +522,6 @@ export const getNewsArticleById = async (id: string): Promise<AppNewsArticle | n
     });
     if (!newsArticle) return null;
 
-    // This version doesn't need user-specific data, so it's simpler.
     return {
       ...mapPrismaNewsToAppNews(newsArticle),
       comments: [],
@@ -531,20 +553,13 @@ export const getAllNewsArticles = async (): Promise<AppNewsArticle[]> => {
   }
 };
 
-export type NewsArticleCreationData = {
-  title: string;
-  slug: string;
-  summary: string;
-  category: string;
-  publishedDate: Date;
-  content: string;
-  imageUrl: string | null;
-  dataAiHint: string | null;
-};
-
 export const createNewsArticleInDb = async (newsData: NewsArticleCreationData): Promise<AppNewsArticle | null> => {
   try {
-    const newArticle = await prisma.newsarticle.create({ data: newsData });
+    const newArticle = await prisma.newsarticle.create({ data: {
+      id: uuid(),
+      ...newsData,
+      updatedAt: new Date()
+    } });
     return {
       ...mapPrismaNewsToAppNews(newArticle),
       comments: [],
@@ -586,9 +601,10 @@ export const updateNewsArticleInDb = async (id: string, newsData: Partial<NewsAr
 
 export const deleteNewsArticleFromDb = async (id: string): Promise<boolean> => {
   try {
-    await prisma.newsarticle.delete({
-      where: { id },
-    });
+    await prisma.newscomment.deleteMany({ where: { news_article_id: id } });
+    await prisma.newslike.deleteMany({ where: { news_article_id: id } });
+    await prisma.bookmarkednewsarticle.deleteMany({ where: { news_article_id: id } });
+    await prisma.newsarticle.delete({ where: { id } });
     return true;
   } catch (error) {
     console.error(`Error deleting news article with ID "${id}" from DB with Prisma:`, error);
@@ -636,10 +652,13 @@ export const getServiceById = async (id: string): Promise<AppServiceItem | null>
   }
 };
 
-export type ServiceCreationData = Prisma.serviceUncheckedCreateInput;
 export const createServiceInDb = async (serviceData: ServiceCreationData): Promise<AppServiceItem | null> => {
   try {
-     const newService = await prisma.service.create({ data: serviceData });
+     const newService = await prisma.service.create({ data: {
+      id: uuid(),
+      ...serviceData,
+      updatedAt: new Date()
+     } });
     return mapPrismaServiceToAppServiceItem(newService);
   } catch (error) {
     console.error('Error creating service in DB with Prisma:', error);
@@ -706,10 +725,13 @@ export const getVideoById = async (id: string): Promise<AppVideo | null> => {
   }
 };
 
-export type VideoCreationData = Prisma.videoUncheckedCreateInput;
 export const createVideoInDb = async (videoData: VideoCreationData): Promise<AppVideo | null> => {
   try {
-    const newVideo = await prisma.video.create({ data: videoData });
+    const newVideo = await prisma.video.create({ data: {
+      id: uuid(),
+      ...videoData,
+      updatedAt: new Date()
+    } });
     return mapPrismaVideoToAppVideo(newVideo);
   } catch (error) {
     console.error('Error creating video in DB with Prisma:', error);
@@ -904,7 +926,7 @@ export const isNewsArticleBookmarked = async (userId: string, articleId: string)
 export const addNewsBookmarkInDb = async (userId: string, articleId: string) => {
   return prisma.bookmarkednewsarticle.create({
     data: {
-      id: uuid(), // Generate UUID for the new bookmark
+      id: uuid(),
       user_id: userId,
       news_article_id: articleId,
     },
@@ -923,14 +945,14 @@ export const removeNewsBookmarkInDb = async (userId: string, articleId: string) 
 };
 
 // --- News Comments and Likes Functions ---
-export const addNewsCommentToDb = async (articleId: string, userId: string, content: string): Promise<PrismaNewsComment> => {
+export const addNewsCommentToDb = async (articleId: string, userId: string, content: string): Promise<Prisma.newscommentGetPayload<{}>> => {
   return prisma.newscomment.create({
     data: {
-      id: uuid(), // Generate UUID for the new comment
+      id: uuid(),
       content,
       news_article_id: articleId,
       user_id: userId,
-      updatedAt: new Date(), // Add required updatedAt field
+      updatedAt: new Date(),
     },
   });
 };
@@ -953,7 +975,7 @@ export const toggleNewsLikeInDb = async (articleId: string, userId: string): Pro
   } else {
     await prisma.newslike.create({
       data: {
-        id: uuid(), // Generate UUID for the new like
+        id: uuid(),
         user_id: userId,
         news_article_id: articleId,
       },
@@ -961,3 +983,4 @@ export const toggleNewsLikeInDb = async (articleId: string, userId: string): Pro
     return { liked: true };
   }
 };
+

@@ -3,7 +3,7 @@ import type { DefaultSession, User as NextAuthUser } from 'next-auth';
 import type { JWT as NextAuthJWT } from 'next-auth/jwt';
 
 // Define your custom user role type
-type UserRole = 'user' | 'admin' | null;
+export type UserRole = 'user' | 'admin' | null;
 
 declare module 'next-auth' {
   /**

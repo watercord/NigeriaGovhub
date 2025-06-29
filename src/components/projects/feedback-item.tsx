@@ -18,13 +18,13 @@ export function FeedbackItem({ feedback }: FeedbackItemProps) {
     <Card className="p-2 sm:p-4 bg-background border-border shadow-sm">
       <CardHeader className="flex flex-row items-start space-x-3 p-2 pt-0 sm:p-4 sm:pt-0 mb-2">
         <Avatar className="h-10 w-10">
-          <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(feedback.userName)}&background=random`} alt={feedback.userName} />
-          <AvatarFallback>{getInitials(feedback.userName)}</AvatarFallback>
+          <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(feedback.user_name)}&background=random`} alt={feedback.user_name} />
+          <AvatarFallback>{getInitials(feedback.user_name)}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <CardTitle className="text-base font-semibold text-foreground">{feedback.userName}</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">{feedback.user_name}</CardTitle>
           <p className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true })}
+            {formatDistanceToNow(new Date(feedback.created_at), { addSuffix: true })}
           </p>
         </div>
         {feedback.rating && (
@@ -42,11 +42,11 @@ export function FeedbackItem({ feedback }: FeedbackItemProps) {
       <CardContent className="text-sm text-foreground/90 p-2 sm:p-4 pt-0">
         <p className="whitespace-pre-wrap">{feedback.comment}</p>
       </CardContent>
-      {feedback.sentimentSummary && (
+      {feedback.sentiment_summary && (
         <CardFooter className="p-2 sm:p-4 pt-2">
           <Badge variant="outline" className="text-xs flex items-center">
             <MessageSquareText className="h-3 w-3 mr-1.5" />
-            Sentiment: {feedback.sentimentSummary}
+            Sentiment: {feedback.sentiment_summary}
           </Badge>
         </CardFooter>
       )}
