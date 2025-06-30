@@ -62,11 +62,11 @@ export default function SiteFeedbackPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <Label htmlFor="name">Full Name (Optional)</Label>
+              <Label htmlFor="name">Full Name</Label> <span className="text-red-700">*</span>
               <Input id="name" {...register("name")} className="mt-1" />
             </div>
             <div>
-              <Label htmlFor="email">Email Address (Optional)</Label>
+              <Label htmlFor="email">Email Address</Label> <span className="text-red-700">*</span>
               <Input id="email" type="email" {...register("email")} className="mt-1" />
               {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
             </div>
@@ -83,6 +83,7 @@ export default function SiteFeedbackPage() {
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="suggestion" id="suggestion" />
                         <Label htmlFor="suggestion" className="font-normal">Suggestion</Label>
+                        
                     </div>
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="compliment" id="compliment" />
@@ -101,12 +102,12 @@ export default function SiteFeedbackPage() {
             </div>
 
             <div>
-              <Label htmlFor="subject">Subject</Label>
+              <Label htmlFor="subject">Subject</Label> <span className="text-red-700">*</span>
               <Input id="subject" {...register("subject")} className="mt-1" />
               {errors.subject && <p className="text-sm text-destructive mt-1">{errors.subject.message}</p>}
             </div>
             <div>
-              <Label htmlFor="message">Your Feedback / Message</Label>
+              <Label htmlFor="message">Your Feedback / Message</Label> <span className="text-red-700">*</span>
               <Textarea id="message" rows={5} {...register("message")} className="mt-1" />
               {errors.message && <p className="text-sm text-destructive mt-1">{errors.message.message}</p>}
             </div>
