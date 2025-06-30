@@ -42,7 +42,7 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
 
   try {
     await resend.emails.send({
-      from: "onboarding@resend.dev", // Replace with your verified domain
+      from: "support@nigeriagovhub.com", // Replace with your verified domain, e.g., "noreply@yourdomain.com"
       to: email,
       subject: "NigeriaGovHub: Reset your password",
       html: `<p>Click the link below to reset your password:</p><p><a href="${resetLink}">Reset Password</a></p>`,
