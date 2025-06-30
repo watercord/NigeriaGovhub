@@ -25,7 +25,7 @@ type SiteFeedbackFormData = z.infer<typeof siteFeedbackSchema>;
 
 export default function SiteFeedbackPage() {
   const { toast } = useToast();
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting }, control } = useForm<SiteFeedbackFormData>({
+  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting }, control } = useForm<SiteFeedbackFormData>({
     resolver: zodResolver(siteFeedbackSchema),
     defaultValues: {
       feedbackType: "suggestion",
@@ -41,6 +41,7 @@ export default function SiteFeedbackPage() {
     });
     reset();
   };
+  
 
   return (
     <div className="space-y-12 py-8">
@@ -74,7 +75,9 @@ export default function SiteFeedbackPage() {
                 <Label className="mb-2 block">Feedback Type</Label>
                 <RadioGroup
                     defaultValue="suggestion"
-                    onValueChange={(value) => control.setValue("feedbackType", value as any)}
+                    onValueChange={(value) => {
+                      setValue("feedbackType", value as SiteFeedbackFormData["feedbackType"]);
+                    }}
                     className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0"
                  >
                     <div className="flex items-center space-x-2">
