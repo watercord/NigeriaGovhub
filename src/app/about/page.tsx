@@ -18,10 +18,44 @@ export default function AboutPage() {
           <div>
             <h2 className="font-headline text-3xl font-semibold text-foreground mb-4">Our Mission</h2>
             <p className="text-foreground/90 mb-4 leading-relaxed">
-              NigeriaGovHub is dedicated to providing a clear and accessible platform for citizens to discover, track, and understand government projects and initiatives across all sectors. We believe that transparency is the cornerstone of good governance and public trust.
-            </p>
+             NigeriaGovHub is an independent civic-tech platform dedicated to connecting Nigerians with reliable, up-to-date information about government institutions, services, and initiatives.            </p>
             <p className="text-foreground/90 leading-relaxed">
-              Our goal is to empower Nigerians with information, enabling them to hold government accountable and participate more effectively in the nation&apos;s development.
+Our mission is to make it easier for every Nigerian — home or abroad — to access public services, understand how government works, and stay informed about the positive progress being made across the country.
+
+We:
+
+Provide a searchable directory of government websites, contacts, and functions.
+
+Highlight useful public services, reforms, and programs.
+
+Share verified government updates, agency spotlights, and good news.
+
+Publish simplified guides on how to access key public services.
+
+While we are not affiliated with any government agency, we occasionally collaborate with official institutions to verify information, receive updates, or share achievements with the public.
+
+Whether you're a student, business owner, civil servant, or citizen looking to engage with public institutions — NigeriaGovHub is your trusted guide.
+
+📬 Contact Us
+For corrections, partnership inquiries, or media requests, please email:
+[your@email.com]
+
+⚖ Disclaimer (for /disclaimer or footer section)
+NigeriaGovHub is an independent information platform and is not owned, managed, or officially endorsed by the Federal Government of Nigeria or any government agency.
+
+All logos, agency names, and trademarks appearing on this site belong to their respective institutions. We use them for identification and informational purposes only.
+
+We gather data from:
+
+Official government websites and public announcements
+
+Direct agency communication (upon request)
+
+Verified media sources and public records
+
+Where possible, we confirm information with agency representatives. However, users should always refer to the official websites or contact the agency directly for the most current and authoritative information.
+
+NigeriaGovHub shall not be held liable for decisions made based on third-party information displayed on this platform.
             </p>
           </div>
           <div className="rounded-lg overflow-hidden shadow-lg">
