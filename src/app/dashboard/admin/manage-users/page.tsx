@@ -118,9 +118,9 @@ export default function ManageUsersPage() {
             <CardTitle className="font-headline text-2xl flex items-center"><UsersIcon className="mr-2 h-6 w-6"/>Manage Users</CardTitle>
             <CardDescription>View, edit, and manage user profiles from the database.</CardDescription>
           </div>
-          <Button className="button-hover w-full sm:w-auto" disabled>
+          {/* <Button className="button-hover w-full sm:w-auto" disabled>
             <UserPlus className="mr-2 h-4 w-4" /> Add New User (Coming Soon)
-          </Button>
+          </Button> */}
         </CardHeader>
       </Card>
 
@@ -165,13 +165,13 @@ export default function ManageUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem disabled> <Edit className="mr-2 h-4 w-4" /> Edit User (Coming Soon)</DropdownMenuItem>
-                          <DropdownMenuItem disabled={isPending || user.id === currentUserId}>
+                          {/* <DropdownMenuItem disabled> <Edit className="mr-2 h-4 w-4" /> Edit User (Coming Soon)</DropdownMenuItem> */}
+                          {/* <DropdownMenuItem disabled={isPending || user.id === currentUserId}> */}
                             {user.role === 'user' ? 'Make Admin (Coming Soon)' : 'Make User (Coming Soon)'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem disabled={isPending || user.id === currentUserId}>
-                            Deactivate User (Coming Soon)
-                          </DropdownMenuItem>
+                          {/* </DropdownMenuItem> */}
+                          {/* <DropdownMenuItem disabled={isPending || user.id === currentUserId}> */}
+                            {/* Deactivate User (Coming Soon) */}
+                          {/* </DropdownMenuItem> */}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => setUserToDelete(user)}
