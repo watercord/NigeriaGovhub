@@ -1048,3 +1048,32 @@ async function getProjectById(id: string): Promise<AppProject | null> {
   }
 }
 
+export async function fetchHomepageDataAction() {
+    try {
+        const projectsData = await fetchAllProjectsFromDb();
+        const newsData = await fetchAllNewsArticlesFromDb();
+        const servicesData = await fetchAllServicesFromDb();
+        const videosData = await fetchAllVideosFromDb();
+
+        return {
+            projects: projectsData.slice(0, 3),
+            news: newsData.slice(0, 3),
+            services: servicesData.slice(0, 3),
+            videos: videosData.slice(0, 3),
+            allVideosCount: videosData.length,
+            error: null
+        };
+    } catch (error) {
+        console.error("Error fetching homepage data:", error);
+        return {
+            projects: [],
+            news: [],
+            services: [],
+            videos: [],
+            allVideosCount: 0,
+            error: "Failed to load page data."
+        }
+    }
+}
+
+

@@ -148,7 +148,7 @@ const mapPrismaServiceToAppServiceItem = (prismaService: PrismaService): AppServ
     slug: prismaService.slug,
     title: prismaService.title,
     summary: prismaService.summary,
-    iconName: prismaService.iconName as (keyof typeof LucideIcon | null),
+    // iconName: prismaService.iconName as (keyof typeof LucideIcon | null),
     link: prismaService.link,
     category: prismaService.category,
     imageUrl: prismaService.imageUrl,

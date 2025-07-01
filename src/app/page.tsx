@@ -15,6 +15,7 @@ import type { Project, NewsArticle, ServiceItem, Video } from "@/types";
 import { useLanguage } from "@/context/language-context";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fetchHomepageDataAction } from "@/lib/actions";
 
 
 function HomePageContent() {
@@ -32,18 +33,17 @@ function HomePageContent() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [projects, news, services, videos] = await Promise.all([
-          getAllProjects(),
-          getAllNewsArticles(),
-          getAllServices(),
-          getAllVideosFromDb(),
-        ]);
-
-        setFeaturedProjects(projects.slice(0, 3));
-        setLatestNews(news.slice(0, 3));
-        setPopularServices(services.slice(0, 3));
-        setFeaturedVideos(videos.slice(0, 3));
-        setAllVideosCount(videos.length);
+         const homepageData = await fetchHomepageDataAction();
+        
+        if (homepageData.error) {
+          console.error("Failed to fetch homepage data:", homepageData.error);
+        } else {
+          setFeaturedProjects(homepageData.projects || []);
+          setLatestNews(homepageData.news || []);
+          setPopularServices(homepageData.services || []);
+          setFeaturedVideos(homepageData.videos || []);
+          setAllVideosCount(homepageData.allVideosCount || 0);
+        }
       } catch (error) {
         console.error("Failed to fetch homepage data", error);
       } finally {
