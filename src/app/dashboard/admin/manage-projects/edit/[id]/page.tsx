@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { getProjectById } from "@/lib/data";
+import { getProjectByIdAction } from "@/lib/actions";
 import type { Project } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -42,7 +42,7 @@ export default function EditProjectPage() {
 
       if (projectId) {
         setIsLoadingData(true);
-        getProjectById(projectId)
+        getProjectByIdAction(projectId)
           .then(data => {
             if (data) {
               setProject(data);
@@ -87,7 +87,7 @@ export default function EditProjectPage() {
       </div>
     );
   }
-
+  
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-start">

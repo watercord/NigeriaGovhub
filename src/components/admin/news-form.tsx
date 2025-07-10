@@ -77,23 +77,34 @@ export function NewsArticleForm({ initialData, articleId, onSuccess }: NewsArtic
     }
   }, [initialData, reset]);
 
-  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      // Important: Clear the imageUrl text field when a new file is selected for preview.
-      // The user must upload the selected file and paste the new URL.
-      setValue('imageUrl', '');
+  const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  setImagePreview(URL.createObjectURL(file));
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch("/api/upload-image", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (res.ok && data.secure_url) {
+      setValue("imageUrl", data.secure_url);
+      toast({ title: "Image Uploaded", description: "Successfully uploaded" });
     } else {
-      // If no file is selected, or selection is cancelled, revert to initial image or clear.
-      setImagePreview(initialData?.imageUrl || null);
-      setValue('imageUrl', initialData?.imageUrl || '');
+      throw new Error(data.error || "Unknown error");
     }
-  };
+  } catch (err) {
+    console.error("Upload failed:", err);
+    toast({ title: "Upload Failed", description: "Unable to upload image.", variant: "destructive" });
+  }
+};
+
 
   const onSubmit: SubmitHandler<NewsArticleFormData> = async (data) => {
     const dataToSubmit = {
@@ -201,11 +212,11 @@ export function NewsArticleForm({ initialData, articleId, onSuccess }: NewsArtic
           </div>
         )}
         <CardDescription className="text-xs">
-          Select an image file from your computer to preview. After previewing, you must upload this image to your own storage (e.g., Firebase Storage) and then paste the public URL into the 'Image URL' field below.
+          Slect an image to upload
         </CardDescription>
       </Card>
 
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+       {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label htmlFor="imageUrl">Image URL (Paste after uploading)</Label>
           <Input id="imageUrl" {...register("imageUrl")} className="mt-1" placeholder="https://your-storage.com/image.png" />
@@ -216,7 +227,7 @@ export function NewsArticleForm({ initialData, articleId, onSuccess }: NewsArtic
           <Input id="dataAiHint" {...register("dataAiHint")} className="mt-1" placeholder="e.g., government building" />
           {errors.dataAiHint && <p className="text-sm text-destructive mt-1">{errors.dataAiHint.message}</p>}
         </div>
-      </div>
+      </div> */}
 
       <Button type="submit" className="w-full sm:w-auto button-hover" disabled={isSubmitting}>
         {isSubmitting ? (isEditMode ? "Updating..." : "Adding...") : (isEditMode ? "Update Article" : "Add News Article")}

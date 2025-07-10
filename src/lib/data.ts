@@ -383,7 +383,7 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
 export const deleteProjectFromDb = async (id: string): Promise<boolean> => {
   try {
     await prisma.projecttag.deleteMany({ where: { projectId: id }});
-    await prisma.Feedback.deleteMany({ where: { project_id: id } });
+    await prisma.feedback.deleteMany({ where: { project_id: id } });
     await prisma.project.delete({ where: { id } });
     return true;
   } catch (error) {
@@ -399,7 +399,7 @@ export const addFeedbackToProject = async (
   feedbackData: { userName: string; comment: string; rating?: number | null; sentimentSummary?: string | null; userId?: string | null }
 ): Promise<AppFeedback | null> => {
   try {
-    const savedFeedback = await prisma.Feedback.create({
+    const savedFeedback = await prisma.feedback.create({
       data: {
         id: uuid(),
         project_id: projectId,
@@ -421,7 +421,7 @@ export const addFeedbackToProject = async (
 
 export const getAllFeedbackWithProjectTitles = async (): Promise<Array<AppFeedback & { projectTitle: string }>> => {
   try {
-    const feedbackWithProjects = await prisma.Feedback.findMany({
+    const feedbackWithProjects = await prisma.feedback.findMany({
       include: {
         project: {
           select: { title: true },
@@ -464,7 +464,7 @@ export async function deleteUserById(userId: string): Promise<{ success: boolean
     await prisma.bookmarkedproject.deleteMany({ where: { user_id: userId } });
     await prisma.account.deleteMany({ where: { userId: userId } });
     await prisma.session.deleteMany({ where: { userId: userId } });
-    await prisma.Feedback.updateMany({
+    await prisma.feedback.updateMany({
       where: { user_id: userId },
       data: { user_id: null },
     });
@@ -895,11 +895,11 @@ export const defaultVideos: AppVideo[] = [];
 // --- NEW Functions for User Dashboard ---
 
 export const getUserDashboardStatsFromDb = async (userId: string): Promise<UserDashboardStats> => {
-  const feedbackCount = await prisma.Feedback.count({
+  const feedbackCount = await prisma.feedback.count({
     where: { user_id: userId },
   });
 
-  const ratingAgg = await prisma.Feedback.aggregate({
+  const ratingAgg = await prisma.feedback.aggregate({
     _avg: { rating: true },
     where: { user_id: userId, rating: { not: null } },
   });
@@ -921,7 +921,7 @@ export const getUserDashboardStatsFromDb = async (userId: string): Promise<UserD
 };
 
 export const getUserFeedbackFromDb = async (userId: string): Promise<Array<AppFeedback & { projectTitle: string, projectId: string }>> => {
-  const feedbackWithProjects = await prisma.Feedback.findMany({
+  const feedbackWithProjects = await prisma.feedback.findMany({
     where: { user_id: userId },
     include: {
       project: {

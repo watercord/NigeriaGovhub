@@ -18,12 +18,15 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'ui-avatars.com',
+        hostname: 'www.gravatar.com',  
         port: '',
-        pathname: '/api/**',
+        pathname: '/**',
       },
+
     ],
+    domains: ['res.cloudinary.com'],
   },
+  
 };
 
 export default nextConfig;

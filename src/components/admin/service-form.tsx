@@ -17,15 +17,16 @@ import Image from "next/image";
 import { Card, CardDescription } from "@/components/ui/card";
 
 const serviceSchema = z.object({
-  title: serviceFormSchemaRaw.title(z).required(),
-  slug: serviceFormSchemaRaw.slug(z).required(),
-  summary: serviceFormSchemaRaw.summary(z).required(),
-  category: serviceFormSchemaRaw.category(z).required(),
+  title: serviceFormSchemaRaw.title(z),
+  slug: serviceFormSchemaRaw.slug(z),
+  summary: serviceFormSchemaRaw.summary(z),
+  category: serviceFormSchemaRaw.category(z),
   link: serviceFormSchemaRaw.link(z).nullable().optional(),
   imageUrl: serviceFormSchemaRaw.imageUrl(z).nullable().optional(),
   dataAiHint: serviceFormSchemaRaw.dataAiHint(z).nullable().optional(),
   iconName: serviceFormSchemaRaw.iconName(z).nullable().optional(),
 }) as z.ZodType<ServiceFormData>;
+
 
 interface ServiceFormProps {
   initialData?: ServiceItem;
@@ -72,20 +73,33 @@ export function ServiceForm({ initialData, serviceId, onSuccess }: ServiceFormPr
     }
   }, [initialData, reset]);
 
-  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      setValue('imageUrl', '');
+  const handleImageFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  setImagePreview(URL.createObjectURL(file));
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch("/api/upload-image", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (res.ok && data.secure_url) {
+      setValue("imageUrl", data.secure_url);
+      toast({ title: "image Uploaded", description: "Successfully uploaded" });
     } else {
-      setImagePreview(initialData?.imageUrl || null);
-      setValue('imageUrl', initialData?.imageUrl || '');
+      throw new Error(data.error || "Unknown error");
     }
-  };
+  } catch (err) {
+    console.error("Upload failed:", err);
+    toast({ title: "Upload Failed", description: "Unable to upload image.", variant: "destructive" });
+  }
+};
 
   const onSubmit: SubmitHandler<ServiceFormData> = async (data) => {
     const dataToSubmit = {

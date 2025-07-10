@@ -130,7 +130,7 @@ export function VideoForm({ initialData, videoId, onSuccess }: VideoFormProps) {
         {errors.url && <p className="text-sm text-destructive mt-1">{errors.url.message}</p>}
       </div>
 
-      <Card className="p-4 space-y-3 bg-muted/30">
+      {/* <Card className="p-4 space-y-3 bg-muted/30">
         <Label htmlFor="thumbnailFile">Video Thumbnail (Optional)</Label>
         <Input id="thumbnailFile" type="file" accept="image/*" onChange={handleThumbnailFileChange} className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
         {thumbnailPreview && (
@@ -154,7 +154,7 @@ export function VideoForm({ initialData, videoId, onSuccess }: VideoFormProps) {
         <Label htmlFor="dataAiHint">Thumbnail AI Hint (Optional, max 2 words)</Label>
         <Input id="dataAiHint" {...register("dataAiHint")} className="mt-1" placeholder="e.g., government building" />
         {errors.dataAiHint && <p className="text-sm text-destructive mt-1">{errors.dataAiHint.message}</p>}
-      </div>
+      </div> */}
 
       <div>
         <Label htmlFor="description">Description (Optional)</Label>

@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { getServiceById } from "@/lib/data";
+import { getServiceByIdAction } from "@/lib/actions";
 import type { ServiceItem } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -42,7 +42,7 @@ export default function EditServicePage() {
 
       if (serviceId) {
         setIsLoadingData(true);
-        getServiceById(serviceId)
+        getServiceByIdAction(serviceId)
           .then(data => {
             if (data) {
               setService(data);
@@ -88,7 +88,7 @@ export default function EditServicePage() {
       </div>
     );
   }
-
+  
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-start">

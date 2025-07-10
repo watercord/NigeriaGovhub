@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { getVideoById } from "@/lib/data";
+import { getVideoByIdAction } from "@/lib/actions"; // Use Server Action
 import type { Video } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -42,7 +42,7 @@ export default function EditVideoPage() {
 
       if (videoId) {
         setIsLoadingData(true);
-        getVideoById(videoId)
+        getVideoByIdAction(videoId) // Use the Server Action
           .then(data => {
             if (data) {
               setVideo(data);
@@ -88,7 +88,7 @@ export default function EditVideoPage() {
       </div>
     );
   }
-
+  
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-start">

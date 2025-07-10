@@ -33,10 +33,10 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
   const resetLink = `${domain}/new-password?token=${token}`;
 
   // Log to console for development without a real email provider
-  console.log("--- DEVELOPMENT: PASSWORD RESET EMAIL ---");
-  console.log(`Recipient: ${email}`);
-  console.log(`Link: ${resetLink}`);
-  console.log("-----------------------------------------");
+  // console.log("--- DEVELOPMENT: PASSWORD RESET EMAIL ---");
+  // console.log(`Recipient: ${email}`);
+  // console.log(`Link: ${resetLink}`);
+  // console.log("-----------------------------------------");
 
   // When you have a Resend API key and a verified domain, uncomment this block
 
@@ -50,5 +50,5 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
   } catch (error) {
     console.error("Failed to send password reset email:", error);
   }
+}
 
-};

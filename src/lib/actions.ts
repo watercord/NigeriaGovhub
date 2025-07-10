@@ -12,8 +12,11 @@ import {
   deleteProjectFromDb,
   getAllProjects as fetchAllProjectsFromDb,
   getAllNewsArticles as fetchAllNewsArticlesFromDb,
+  getVideoById as getVideoByIdFromDb,
   getAllServices as fetchAllServicesFromDb,
   getUsers as fetchAllUsersFromDb,
+  getNewsArticleById as getNewsArticleByIdFromDb,
+  getServiceById as getServiceByIdFromDb,
   getAllVideosFromDb as fetchAllVideosFromDb,
   getAllFeedbackWithProjectTitles as fetchAllFeedbackWithProjectTitlesFromDb,
   type ProjectCreationData,
@@ -542,36 +545,53 @@ export async function addVideo(
   }
 }
 
-export async function updateVideo(
-  id: string,
-  videoData: VideoFormData
-): Promise<ActionResult<AppVideo>> {
+export async function getVideoByIdAction(id: string): Promise<AppVideo | null> {
   try {
-    const dataToUpdate: Partial<VideoCreationData> = {
-      title: videoData.title,
-      url: videoData.url,
-      thumbnailUrl: videoData.thumbnailUrl,
-      dataAiHint: videoData.dataAiHint,
-      description: videoData.description,
-    };
-
-    const updatedVideo = await updateVideoInDb(id, dataToUpdate);
-    if (!updatedVideo) {
-      return { success: false, message: 'Failed to update video in the database.' };
-    }
-
-    revalidatePath('/dashboard/admin/manage-videos');
-    revalidatePath('/');
-    return { success: true, message: 'Video updated successfully!', item: updatedVideo };
+    const video = await getVideoByIdFromDb(id);
+    return video;
   } catch (error) {
-    console.error('Error updating video:', error);
-    let errorMessage = 'An unexpected error occurred while updating the video.';
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
+    console.error(`Error in getVideoByIdAction for ID ${id}:`, error);
+    return null; 
   }
 }
+
+export async function updateVideo(
+  id: string,
+  videoData: Partial<VideoFormData>
+): Promise<{ success: boolean; message: string; errorDetails?: any }> {
+  try {
+    const response = await fetch(`/api/videos/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(videoData),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: result.message || "Failed to update video.",
+        errorDetails: result.errors || result,
+      };
+    }
+
+    return {
+      success: true,
+      message: result.message || "Video updated successfully.",
+    };
+  } catch (error) {
+    console.error("updateVideo error:", error);
+    return {
+      success: false,
+      message: "An unexpected error occurred while updating video.",
+      errorDetails: error,
+    };
+  }
+}
+
 
 export async function deleteVideo(id: string): Promise<ActionResult> {
   try {
@@ -1075,5 +1095,22 @@ export async function fetchHomepageDataAction() {
         }
     }
 }
+export async function getNewsArticleByIdAction(id: string): Promise<AppNewsArticle | null> {
+  try {
+    const article = await getNewsArticleByIdFromDb(id);
+    return article;
+  } catch (error) {
+    console.error(`Error in getNewsArticleByIdAction for ID ${id}:`, error);
+    return null; 
+  }
+}
 
-
+export async function getServiceByIdAction(id: string): Promise<AppServiceItem | null> {
+  try {
+    const service = await getServiceByIdFromDb(id);
+    return service;
+  } catch (error) {
+    console.error(`Error in getServiceByIdAction for ID ${id}:`, error);
+    return null; 
+  }
+}

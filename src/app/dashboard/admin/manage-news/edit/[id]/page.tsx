@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { getNewsArticleById } from "@/lib/data";
+import { getNewsArticleByIdAction } from "@/lib/actions";
 import type { NewsArticle } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -42,7 +42,7 @@ export default function EditNewsArticlePage() {
 
       if (articleId) {
         setIsLoadingData(true);
-        getNewsArticleById(articleId)
+        getNewsArticleByIdAction(articleId)
           .then(data => {
             if (data) {
               setArticle(data);
@@ -88,7 +88,7 @@ export default function EditNewsArticlePage() {
       </div>
     );
   }
-
+  
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-start">
