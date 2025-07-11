@@ -171,7 +171,10 @@ export const newsArticleFormSchemaRaw = {
   summary: (z: any) => z.string().min(10, "Summary must be at least 10 characters.").max(500),
   category: (z: any) => z.string().min(2, "Category must be at least 2 characters.").max(50),
   publishedDate: (z: any) => z.coerce.date({ required_error: "Published date is required."}),
-  content: (z: any) => z.string().min(50, "Content must be at least 50 characters."),
+  content: (z: any) => z.string()
+    .min(50, "Content must be at least 50 characters.")
+    .max(12000, "Content must not exceed 12,000 characters."),
+
   imageUrl: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
   dataAiHint: (z: any) => z.string().max(50, "AI hint too long.").optional().nullable(),
 };
