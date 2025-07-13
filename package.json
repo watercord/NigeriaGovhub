@@ -12,7 +12,6 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
     "type": "module"
-    
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.8.0",
@@ -49,6 +48,8 @@
     "firebase": "^11.8.1",
     "genkit": "^1.8.0",
     "lucide-react": "^0.475.0",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.14.2",
     "next": "15.3.3",
     "next-auth": "^4.24.11",
     "patch-package": "^8.0.0",

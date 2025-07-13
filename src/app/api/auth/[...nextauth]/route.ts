@@ -68,22 +68,34 @@ export const authOptions: AuthOptions = {
     // error: '/auth/error', // A custom error page
     // verifyRequest: '/auth/verify-request', // A custom page for checking email
   },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-      }
-      return token;
+  debug: true, // ✅ Enables detailed logs
+  logger: {
+    error(code, metadata) {
+      console.error('[NextAuth][Error]', code, metadata);
     },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as UserRole;
-      }
-      return session;
+    warn(code) {
+      console.warn('[NextAuth][Warn]', code);
+    },
+    debug(code, metadata) {
+      console.debug('[NextAuth][Debug]', code, metadata);
     },
   },
+  callbacks: {
+  async jwt({ token, user }) {
+    if (user) {
+      token.id = user.id;
+      token.role = (user as any).role ?? 'user'; // fallback for OAuth users
+    }
+    return token;
+  },
+  async session({ session, token }) {
+    if (session.user) {
+      session.user.id = token.id as string;
+      session.user.role = token.role as UserRole ?? 'user';
+    }
+    return session;
+  },
+}
 };
 
 const handler = NextAuth(authOptions);
