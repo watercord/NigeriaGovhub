@@ -23,46 +23,48 @@ const providers = [
       password: { label: "Password", type: "password" }
     },
     async authorize(credentials, req) {
-      if (!credentials?.email || !credentials.password) {
-        throw new Error('Email and password are required.');
-      }
-
-      const userFromDb = await getFullUserByEmail(credentials.email);
-
-      if (!userFromDb || !userFromDb.password) {
-        // User not found or password not set (e.g., OAuth user trying credentials)
-        throw new Error('Invalid email or password.');
-      }
-
-      const isValidPassword = await bcrypt.compare(credentials.password, userFromDb.password);
-
-      if (!isValidPassword) {
-        throw new Error('Invalid email or password.');
-      }
-
-      if (!userFromDb.emailVerified) {
-        throw new Error('Email not verified. Please check your inbox.');
-      }
-
-      // Return a plain, serializable object to prevent JWT errors
-      return {
-        id: userFromDb.id,
-        name: userFromDb.name,
-        email: userFromDb.email,
-        image: userFromDb.image,
-        role: userFromDb.role as UserRole,
-      };
+  try {
+    if (!credentials?.email || !credentials.password) {
+      throw new Error('Email and password are required.');
     }
-  }),
+
+    const userFromDb = await getFullUserByEmail(credentials.email);
+    if (!userFromDb || !userFromDb.password) {
+      throw new Error('Invalid email or password.');
+    }
+
+    const isValidPassword = await bcrypt.compare(credentials.password, userFromDb.password);
+    if (!isValidPassword) {
+      throw new Error('Invalid email or password.');
+    }
+
+    if (!userFromDb.emailVerified) {
+      throw new Error('Email not verified. Please check your inbox.');
+    }
+
+    return {
+      id: userFromDb.id,
+      name: userFromDb.name,
+      email: userFromDb.email,
+      image: userFromDb.image,
+      role: userFromDb.role as UserRole,
+    };
+  } catch (err) {
+    console.error('[CredentialsProvider][AuthorizeError]', err);
+    throw new Error('Failed to authorize. Please try again.');
+  }
+},
+}),
   // FacebookProvider will be added here
 ];
 
-export const authOptions: AuthOptions = {
+export const authOptions: AuthOptions & {trustHost: boolean} = {
   adapter: PrismaAdapter(prisma),
   providers: providers,
   session: {
     strategy: 'jwt',
   },
+  trustHost: true,
   pages: {
     signIn: '/login',
     // error: '/auth/error', // A custom error page
@@ -83,8 +85,8 @@ export const authOptions: AuthOptions = {
   callbacks: {
   async jwt({ token, user }) {
     if (user) {
-      token.id = user.id;
-      token.role = (user as any).role ?? 'user'; // fallback for OAuth users
+      token.id = user.id ?? '';
+      token.role = (user as any)?.role ?? 'user'; // fallback for OAuth users
     }
     return token;
   },
@@ -95,7 +97,9 @@ export const authOptions: AuthOptions = {
     }
     return session;
   },
-}
+},
+  secret: process.env.NEXTAUTH_SECRET,
+  useSecureCookies: process.env.NODE_ENV === 'production',
 };
 
 const handler = NextAuth(authOptions);
