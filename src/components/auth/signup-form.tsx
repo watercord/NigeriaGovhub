@@ -80,7 +80,7 @@ export function SignupForm() {
 
   return (
     <div className="space-y-6">
-      <Button
+      {/* <Button
         variant="outline"
         className="w-full button-hover"
         onClick={handleGoogleSignUp}
@@ -94,7 +94,7 @@ export function SignupForm() {
             {t.google_signup}
           </>
         )}
-      </Button>
+      </Button> */}
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
