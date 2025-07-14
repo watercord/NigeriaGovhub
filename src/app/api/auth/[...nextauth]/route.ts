@@ -3,7 +3,6 @@ import NextAuth from 'next-auth';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import prisma from '@/lib/prisma';
 import type { AuthOptions, User as NextAuthUser, Session as NextAuthSession } from 'next-auth';
-import type { JWT as NextAuthJWT } from 'next-auth/jwt';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from "next-auth/providers/google";
 import bcrypt from 'bcryptjs';
@@ -55,7 +54,6 @@ const providers = [
   }
 },
 }),
-  // FacebookProvider will be added here
 ];
 
 export const authOptions: AuthOptions & {trustHost: boolean} = {
