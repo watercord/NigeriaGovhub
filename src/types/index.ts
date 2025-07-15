@@ -87,7 +87,7 @@ export type User = InferSelectModel<typeof user> & {
 export interface NewsComment {
   id: string;
   content: string;
-  createdAt: Date | null; // Allow null
+  createdAt: Date | null;
   user: {
     id: string;
     name: string | null;

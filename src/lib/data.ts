@@ -1,12 +1,11 @@
 import type * as LucideIcons from 'lucide-react';
 import type { Ministry, State, Project, Feedback, ImpactStat, Video, User, NewsArticle, ServiceItem, SiteSettings, UserDashboardStats, NewsComment } from '@/types';
-import type { InferModel } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/drizzle';
 import { user, project, feedback, newsarticle, newscomment, newslike, bookmarkednewsarticle, bookmarkedproject, service, video, sitesetting, projecttag, tag, account, session } from '../db/schema';
 import * as relations from '../db/relations';
 import { eq, and, sql, isNotNull, desc, asc } from 'drizzle-orm';
 import { InferSelectModel } from 'drizzle-orm';
-import { v4 as uuid } from 'uuid';
 
 // --- Mock Data for Ministries and States ---
 const mockMinistries: Ministry[] = [
@@ -98,11 +97,10 @@ const mapPrismaProjectToAppProject = (
     projectTags?: { tag: InferSelectModel<typeof tag> }[];
   }
 ): Project => {
-  const images = safeParseJsonArray<{
-    url: string;
-    alt: string;
-    dataAiHint?: string;
-  }>(drizzleProject.images, []).map((img) => ({
+  const images = safeParseJsonArray<{ url: string; alt: string; dataAiHint?: string }>(
+    drizzleProject.images,
+    []
+  ).map((img) => ({
     url: img.url || '',
     alt: img.alt || '',
     dataAiHint: img.dataAiHint,
@@ -157,9 +155,11 @@ const mapPrismaProjectToAppProject = (
     state,
   };
 };
-// --- Helper function to map Drizzle Feedback to Feedback ---
 
-const mapPrismaFeedbackToAppFeedback = (drizzleFeedback: InferSelectModel<typeof feedback> & { user?: InferSelectModel<typeof user> | null }): Feedback => {
+// --- Helper function to map Drizzle Feedback to Feedback ---
+const mapPrismaFeedbackToAppFeedback = (
+  drizzleFeedback: InferSelectModel<typeof feedback> & { user?: InferSelectModel<typeof user> | null }
+): Feedback => {
   return {
     id: drizzleFeedback.id,
     project_id: drizzleFeedback.project_id,
@@ -169,12 +169,11 @@ const mapPrismaFeedbackToAppFeedback = (drizzleFeedback: InferSelectModel<typeof
     rating: drizzleFeedback.rating,
     sentiment_summary: drizzleFeedback.sentiment_summary,
     created_at: drizzleFeedback.created_at ? new Date(drizzleFeedback.created_at) : null,
-    user: drizzleFeedback.user ? mapPrismaUserToAppUser(drizzleFeedback.user) : null, // Use null
+    user: drizzleFeedback.user ? mapPrismaUserToAppUser(drizzleFeedback.user) : null,
   };
 };
 
-/// --- Helper function to map Drizzle User to User ---
-// src/lib/data.ts
+// --- Helper function to map Drizzle User to User ---
 const mapPrismaUserToAppUser = (drizzleUser: InferSelectModel<typeof user>): User => {
   return {
     id: drizzleUser.id,
@@ -184,8 +183,8 @@ const mapPrismaUserToAppUser = (drizzleUser: InferSelectModel<typeof user>): Use
     image: drizzleUser.image,
     role: drizzleUser.role as 'user' | 'admin' | null,
     created_at: drizzleUser.created_at ? new Date(drizzleUser.created_at) : null,
-    password: drizzleUser.password, // Add password
-    updated_at: drizzleUser.updated_at ? new Date(drizzleUser.updated_at) : null, // Add updated_at
+    password: drizzleUser.password,
+    updated_at: drizzleUser.updated_at ? new Date(drizzleUser.updated_at) : null,
   };
 };
 
@@ -317,7 +316,7 @@ export const createProjectInDb = async (projectData: ProjectCreationData): Promi
     }
 
     const { tags, images, videos, impact_stats, ...scalarData } = projectData;
-    const newProjectId = uuid();
+    const newProjectId = uuidv4();
     await db.transaction(async (tx) => {
       await tx.insert(project).values({
         ...scalarData,
@@ -328,9 +327,9 @@ export const createProjectInDb = async (projectData: ProjectCreationData): Promi
         expected_end_date: scalarData.expected_end_date ? new Date(scalarData.expected_end_date) : null,
         budget: scalarData.budget != null ? String(scalarData.budget) : null,
         expenditure: scalarData.expenditure != null ? String(scalarData.expenditure) : null,
-        images: images ? JSON.stringify(images) : JSON.stringify([]),
-        videos: videos ? JSON.stringify(videos) : JSON.stringify([]),
-        impact_stats: impact_stats ? JSON.stringify(impact_stats) : JSON.stringify([]),
+        images: images ? JSON.stringify(images) : null,
+        videos: videos ? JSON.stringify(videos) : null,
+        impact_stats: impact_stats ? JSON.stringify(impact_stats) : null,
       });
 
       if (tags && tags.length > 0) {
@@ -449,7 +448,7 @@ export const addFeedbackToProject = async (
   feedbackData: { userName: string; comment: string; rating?: number | null; sentimentSummary?: string | null; userId?: string | null }
 ): Promise<Feedback | null> => {
   try {
-    const newFeedbackId = uuid();
+    const newFeedbackId = uuidv4();
     await db.insert(feedback).values({
       id: newFeedbackId,
       project_id: projectId,
@@ -596,13 +595,13 @@ export const getNewsArticleBySlug = async (slug: string, userId?: string): Promi
       ...mapPrismaNewsToAppNews(newsArticle),
       likeCount,
       isLikedByUser: isLiked,
-      comments: newsArticle.newscomments?.map((c: InferSelectModel<typeof newscomment> & { user: InferSelectModel<typeof user> | null }) => ({
+      comments: newsArticle.newscomments?.map((c) => ({
         id: c.id,
         content: c.content,
         createdAt: c.createdAt ? new Date(c.createdAt) : null,
         user: c.user
           ? { id: c.user.id, name: c.user.name, image: c.user.image }
-          : { id: '', name: 'Anonymous', image: null } as NewsComment['user'],
+          : { id: '', name: 'Anonymous', image: null },
       })) || [],
     };
   } catch (error) {
@@ -644,7 +643,7 @@ export const getAllNewsArticles = async (): Promise<NewsArticle[]> => {
 
 export const createNewsArticleInDb = async (newsData: NewsArticleCreationData): Promise<NewsArticle | null> => {
   try {
-    const newArticleId = uuid();
+    const newArticleId = uuidv4();
     await db.insert(newsarticle).values({
       id: newArticleId,
       ...newsData,
@@ -736,7 +735,7 @@ export const getServiceById = async (id: string): Promise<ServiceItem | null> =>
 
 export const createServiceInDb = async (serviceData: ServiceCreationData): Promise<ServiceItem | null> => {
   try {
-    const newServiceId = uuid();
+    const newServiceId = uuidv4();
     await db.insert(service).values({
       id: newServiceId,
       ...serviceData,
@@ -803,7 +802,7 @@ export const getVideoById = async (id: string): Promise<Video | null> => {
 
 export const createVideoInDb = async (videoData: VideoCreationData): Promise<Video | null> => {
   try {
-    const newVideoId = uuid();
+    const newVideoId = uuidv4();
     await db.insert(video).values({
       id: newVideoId,
       ...videoData,
@@ -1016,7 +1015,7 @@ export const isNewsArticleBookmarked = async (userId: string, articleId: string)
 export const addNewsBookmarkInDb = async (userId: string, articleId: string): Promise<boolean> => {
   try {
     await db.insert(bookmarkednewsarticle).values({
-      id: uuid(),
+      id: uuidv4(),
       user_id: userId,
       news_article_id: articleId,
       createdAt: new Date(),
@@ -1096,7 +1095,7 @@ export const isProjectBookmarked = async (userId: string, projectId: string): Pr
 export const addProjectBookmarkInDb = async (userId: string, projectId: string): Promise<boolean> => {
   try {
     await db.insert(bookmarkedproject).values({
-      id: uuid(),
+      id: uuidv4(),
       user_id: userId,
       project_id: projectId,
       createdAt: new Date(),
@@ -1123,7 +1122,7 @@ export const removeProjectBookmarkInDb = async (userId: string, projectId: strin
 export const addNewsLikeInDb = async (userId: string, articleId: string): Promise<boolean> => {
   try {
     await db.insert(newslike).values({
-      id: uuid(),
+      id: uuidv4(),
       user_id: userId,
       news_article_id: articleId,
       createdAt: new Date(),
@@ -1159,7 +1158,7 @@ export const toggleNewsLikeInDb = async (userId: string, articleId: string): Pro
       return false;
     } else {
       await db.insert(newslike).values({
-        id: uuid(),
+        id: uuidv4(),
         user_id: userId,
         news_article_id: articleId,
         createdAt: new Date(),
@@ -1175,13 +1174,14 @@ export const toggleNewsLikeInDb = async (userId: string, articleId: string): Pro
 // --- News Comment Functions ---
 export const addNewsCommentInDb = async (userId: string, articleId: string, content: string): Promise<NewsComment | null> => {
   try {
-    const newCommentId = uuid();
+    const newCommentId = uuidv4();
     await db.insert(newscomment).values({
       id: newCommentId,
       user_id: userId,
       news_article_id: articleId,
       content,
       createdAt: new Date(),
+      updatedAt: new Date(),
     });
     const [newComment] = await db.select().from(newscomment).where(eq(newscomment.id, newCommentId)).limit(1);
     const [userRecord] = await db.select({ id: user.id, name: user.name, image: user.image })

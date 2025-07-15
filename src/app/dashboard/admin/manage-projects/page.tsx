@@ -148,7 +148,11 @@ export default function ManageProjectsPage() {
                         {project.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(project.lastUpdatedAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {project.lastUpdatedAt 
+                        ? new Date(project.lastUpdatedAt as string | number | Date).toLocaleDateString()
+                        : 'N/A'}
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

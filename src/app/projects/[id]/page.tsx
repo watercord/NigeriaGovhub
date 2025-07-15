@@ -108,7 +108,10 @@ export default function ProjectDetailPage() {
           <span>|</span>
           <div className="flex items-center"><MapPin className="h-4 w-4 mr-1.5" /> {project.state.name}</div>
           <span>|</span>
-          <div className="flex items-center"><CalendarDays className="h-4 w-4 mr-1.5" /> Updated: {new Date(project.lastUpdatedAt).toLocaleDateString()}</div>
+          <div className="flex items-center">
+            <CalendarDays className="h-4 w-4 mr-1.5" /> 
+            Updated: {project.lastUpdatedAt ? new Date(project.lastUpdatedAt).toLocaleDateString() : 'N/A'}
+          </div>
         </div>
       </section>
 
@@ -173,11 +176,11 @@ export default function ProjectDetailPage() {
               <CardTitle className="font-headline flex items-center"><Info className="h-5 w-5 mr-2 text-primary" /> Key Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex justify-between"><span>Start Date:</span> <strong>{new Date(project.startDate).toLocaleDateString()}</strong></div>
+              <div className="flex justify-between"><span>Start Date:</span> <strong>{new Date(project.startDate).toLocaleString()}</strong></div>
               {project.expectedEndDate && <div className="flex justify-between"><span>Expected End:</span> <strong>{new Date(project.expectedEndDate).toLocaleDateString()}</strong></div>}
               {project.actualEndDate && <div className="flex justify-between"><span>Actual End:</span> <strong>{new Date(project.actualEndDate).toLocaleDateString()}</strong></div>}
-              {project.budget && <div className="flex justify-between"><span>Budget:</span> <strong>₦{project.budget.toLocaleString()}</strong></div>}
-              {project.expenditure && <div className="flex justify-between"><span>Expenditure:</span> <strong>₦{project.expenditure.toLocaleString()}</strong></div>}
+              {project.budget && <div className="flex justify-between"><span>Budget:</span> <strong>₦{(project.budget as number).toLocaleString()}</strong></div>}
+              {project.expenditure && <div className="flex justify-between"><span>Expenditure:</span> <strong>₦{(project.expenditure as number).toLocaleString()}</strong></div>}
             </CardContent>
           </Card>
 

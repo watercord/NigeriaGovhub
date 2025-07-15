@@ -24,7 +24,7 @@ export function FeedbackItem({ feedback }: FeedbackItemProps) {
         <div className="flex-1">
           <CardTitle className="text-base font-semibold text-foreground">{feedback.user_name}</CardTitle>
           <p className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(feedback.created_at), { addSuffix: true })}
+            {feedback.created_at ? formatDistanceToNow(feedback.created_at, { addSuffix: true }) : 'N/A'}
           </p>
         </div>
         {feedback.rating && (

@@ -252,28 +252,6 @@ export async function deleteProject(id: string): Promise<ActionResult> {
 }
 
 export async function getProjectByIdAction(id: string): Promise<AppProject | null> {
-  /**
-   * Helper function to safely convert values to number or null
-   * Handles both direct numbers and string representations
-   */
-  const convertToNumber = (value: unknown): number | null => {
-    if (value === null || value === undefined) return null;
-    
-    if (typeof value === 'number') {
-      return isNaN(value) ? null : value;
-    }
-    
-    if (typeof value === 'string') {
-      // Handle empty strings and whitespace
-      if (value.trim() === '') return null;
-      
-      const num = Number(value);
-      return isNaN(num) ? null : num;
-    }
-    
-    return null;
-  };
-
   try {
     const projectResult = await db
       .select({
@@ -365,8 +343,13 @@ export async function getProjectByIdAction(id: string): Promise<AppProject | nul
             updatedAt: new Date(video.updatedAt),
           }))
         : undefined,
-      budget: convertToNumber(projectData.project.budget),
-      expenditure: convertToNumber(projectData.project.expenditure),
+     budget: projectData.project.budget !== undefined && projectData.project.budget !== null
+  ? Number(projectData.project.budget)
+  : null,
+
+  expenditure: projectData.project.expenditure !== undefined && projectData.project.expenditure !== null
+  ? Number(projectData.project.expenditure)
+  : null,
       feedback: feedbackResults.map(f => ({
   ...f,
   created_at: f.created_at ? new Date(f.created_at) : null,

@@ -1,4 +1,4 @@
-import { mysqlTableCreator, varchar, text, datetime, decimal, int, boolean, index, uniqueIndex } from 'drizzle-orm/mysql-core';
+import { mysqlTableCreator, varchar, text, datetime, decimal, int, boolean, index, uniqueIndex, unique, foreignKey } from 'drizzle-orm/mysql-core';
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
@@ -83,8 +83,8 @@ export const passwordResetToken = mysqlTable('passwordResetToken', {
 
 // Newsarticle table
 export const newsarticle = mysqlTable('newsarticle', {
-  id: varchar('id', { length: 36 }).primaryKey().default(sql`UUID()`),
-  slug: varchar('slug', { length: 255 }).unique().notNull(),
+  id: varchar('id', { length: 36 }).primaryKey(),
+  slug: varchar('slug', { length: 255 }).notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   summary: text('summary').notNull(),
   imageUrl: varchar('imageUrl', { length: 255 }),
@@ -95,34 +95,40 @@ export const newsarticle = mysqlTable('newsarticle', {
   createdAt: datetime('createdAt').default(sql`NOW()`),
   updatedAt: datetime('updatedAt').default(sql`NOW()`),
 }, (table) => ({
-  slugIdx: index('idx_newsarticle_slug').on(table.slug),
+  slugIdx: unique('newsarticle_slug_unique').on(table.slug),
 }));
 
 // Bookmarkednewsarticle table
 export const bookmarkednewsarticle = mysqlTable('bookmarkednewsarticle', {
-  id: varchar('id', { length: 36 }).primaryKey().default(sql`UUID()`),
+  id: varchar('id', { length: 36 }).primaryKey(),
   user_id: varchar('user_id', { length: 255 }).notNull(),
   news_article_id: varchar('news_article_id', { length: 36 }).notNull(),
   createdAt: datetime('createdAt').default(sql`NOW()`),
-}, (table) => [
-  uniqueIndex('idx_bookmarkednewsarticle_user_news').on(table.user_id, table.news_article_id),
-]);
-
+}, (table) => ({
+  userNewsIdx: unique('idx_bookmarkednewsarticle_user_news').on(table.user_id, table.news_article_id),
+}));
 // Newscomment table
-export const newscomment = mysqlTable("newscomment", {
-  id: varchar('id', { length: 36 }).primaryKey().default(sql`UUID()`),
+export const newscomment = mysqlTable('newscomment', {
+  id: varchar('id', { length: 36 }).primaryKey(),
   content: text('content').notNull(),
   news_article_id: varchar('news_article_id', { length: 36 }).notNull(),
   user_id: varchar('user_id', { length: 255 }).notNull(),
   createdAt: datetime('createdAt').default(sql`NOW()`),
   updatedAt: datetime('updatedAt').default(sql`NOW()`),
-}, (table) => [
-  uniqueIndex('idx_newscomment_user_news').on(table.user_id, table.news_article_id),
-]);
+}, (table) => ({
+  userFk: foreignKey({
+    columns: [table.user_id],
+    foreignColumns: [user.id],
+  }).onDelete('cascade'),
+  newsArticleFk: foreignKey({
+    columns: [table.news_article_id],
+    foreignColumns: [newsarticle.id],
+  }).onDelete('cascade'),
+}));
 
 // Newslike table
 export const newslike = mysqlTable('newslike', {
-  id: varchar('id', { length: 36 }).primaryKey().default(sql`UUID()`),
+  id: varchar('id', { length: 36 }).primaryKey(),
   user_id: varchar('user_id', { length: 255 }).notNull(),
   news_article_id: varchar('news_article_id', { length: 36 }).notNull(),
   createdAt: datetime('createdAt').default(sql`NOW()`),
@@ -185,7 +191,7 @@ export const tag = mysqlTable('tag', {
 
 // Service table
 export const service = mysqlTable('service', {
-  id: varchar('id', { length: 36 }).primaryKey().default(sql`UUID()`),
+  id: varchar('id', { length: 36 }).primaryKey(),
   slug: varchar('slug', { length: 255 }).unique().notNull(),
   title: varchar('title', { length: 255 }).notNull(),
   summary: text('summary').notNull(),
@@ -202,7 +208,7 @@ export const service = mysqlTable('service', {
 
 // Video table
 export const video = mysqlTable('video', {
-  id: varchar('id', { length: 36 }).primaryKey().default(sql`UUID()`),
+  id: varchar('id', { length: 36 }).primaryKey(),
   title: varchar('title', { length: 255 }).notNull(),
   url: varchar('url', { length: 255 }).notNull(),
   thumbnailUrl: varchar('thumbnailUrl', { length: 255 }),
@@ -224,7 +230,7 @@ export const sitesetting = mysqlTable('sitesetting', {
 
 // Bookmarkedproject table
 export const bookmarkedproject = mysqlTable('bookmarkedproject', {
-  id: varchar('id', { length: 36 }).primaryKey().default(sql`UUID()`),
+  id: varchar('id', { length: 36 }).primaryKey(),
   user_id: varchar('user_id', { length: 255 }).notNull(),
   project_id: varchar('project_id', { length: 255 }).notNull(),
   createdAt: datetime('createdAt').default(sql`NOW()`),

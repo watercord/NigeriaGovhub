@@ -120,7 +120,7 @@ export default function ManageFeedbackPage() {
                     <TableCell>
                       {fb.sentiment_summary ? <Badge variant="outline">{fb.sentiment_summary}</Badge> : <span className="text-muted-foreground">N/A</span>}
                     </TableCell>
-                    <TableCell>{formatDistanceToNow(new Date(fb.created_at), { addSuffix: true })}</TableCell>
+                    <TableCell>{formatDistanceToNow(fb.created_at ? new Date(fb.created_at) : new Date(), { addSuffix: true }) as string}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
