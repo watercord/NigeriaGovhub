@@ -1,15 +1,31 @@
-
-import NextAuth from 'next-auth';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import prisma from '@/lib/prisma';
-import type { AuthOptions, User as NextAuthUser, Session as NextAuthSession } from 'next-auth';
+import NextAuth, { AuthOptions } from 'next-auth';
+import { DrizzleAdapter } from '@auth/drizzle-adapter';
+import { drizzle } from 'drizzle-orm/mysql2';
+import { eq } from 'drizzle-orm';
+import { user } from '@/db/schema';
+import { db } from '@/db/drizzle';
+import { DefaultUser, DefaultSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from "next-auth/providers/google";
+import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
-import { getFullUserByEmail } from '@/lib/data';
 import type { UserRole } from '@/types/next-auth';
 
-// Define providers here as you add them
+// Define the getFullUserByEmail function using Drizzle
+export const getFullUserByEmail = async (email: string) => {
+  try {
+    const result = await db
+      .select()
+      .from(user)
+      .where(eq(user.email, email))
+      .limit(1);
+
+    return result[0] || null;
+  } catch {
+    return null;
+  }
+};
+
+// Define providers
 const providers = [
   // GoogleProvider({
   //   clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -18,57 +34,58 @@ const providers = [
   CredentialsProvider({
     name: 'Credentials',
     credentials: {
-      email: { label: "Email", type: "email" },
-      password: { label: "Password", type: "password" }
+      email: { label: 'Email', type: 'email' },
+      password: { label: 'Password', type: 'password' },
     },
     async authorize(credentials, req) {
-  try {
-    if (!credentials?.email || !credentials.password) {
-      throw new Error('Email and password are required.');
-    }
+      try {
+        if (!credentials?.email || !credentials.password) {
+          throw new Error('Email and password are required.');
+        }
 
-    const userFromDb = await getFullUserByEmail(credentials.email);
-    if (!userFromDb || !userFromDb.password) {
-      throw new Error('Invalid email or password.');
-    }
+        const userFromDb = await getFullUserByEmail(credentials.email);
+        if (!userFromDb || !userFromDb.password) {
+          throw new Error('Invalid email or password.');
+        }
 
-    const isValidPassword = await bcrypt.compare(credentials.password, userFromDb.password);
-    if (!isValidPassword) {
-      throw new Error('Invalid email or password.');
-    }
+        const isValidPassword = await bcrypt.compare(credentials.password, userFromDb.password);
+        if (!isValidPassword) {
+          throw new Error('Invalid email or password.');
+        }
 
-    if (!userFromDb.emailVerified) {
-      throw new Error('Email not verified. Please check your inbox.');
-    }
+        if (!userFromDb.emailVerified) {
+          throw new Error('Email not verified. Please check your inbox.');
+        }
 
-    return {
-      id: userFromDb.id,
-      name: userFromDb.name,
-      email: userFromDb.email,
-      image: userFromDb.image,
-      role: userFromDb.role as UserRole,
-    };
-  } catch (err) {
-    console.error('[CredentialsProvider][AuthorizeError]', err);
-    throw new Error('Failed to authorize. Please try again.');
-  }
-},
-}),
+        return {
+          id: userFromDb.id,
+          name: userFromDb.name,
+          email: userFromDb.email,
+          image: userFromDb.image,
+          role: userFromDb.role as UserRole,
+        };
+      } catch (err) {
+        console.error('[CredentialsProvider][AuthorizeError]', err);
+        throw new Error('Failed to authorize. Please try again.');
+      }
+    },
+  }),
 ];
 
-export const authOptions: AuthOptions & {trustHost: boolean} = {
-  adapter: PrismaAdapter(prisma),
+export const authOptions: AuthOptions & { trustHost: boolean } = {
+  adapter: DrizzleAdapter(db) as any,
   providers: providers,
   session: {
     strategy: 'jwt',
   },
+
   trustHost: true,
   pages: {
     signIn: '/login',
-    // error: '/auth/error', // A custom error page
-    // verifyRequest: '/auth/verify-request', // A custom page for checking email
+    // error: '/auth/error',
+    // verifyRequest: '/auth/verify-request',
   },
-  debug: true, // ✅ Enables detailed logs
+  debug: true,
   logger: {
     error(code, metadata) {
       console.error('[NextAuth][Error]', code, metadata);
@@ -81,21 +98,21 @@ export const authOptions: AuthOptions & {trustHost: boolean} = {
     },
   },
   callbacks: {
-  async jwt({ token, user }) {
-    if (user) {
-      token.id = user.id ?? '';
-      token.role = (user as any)?.role ?? 'user'; // fallback for OAuth users
-    }
-    return token;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id ?? '';
+        token.role = (user.role as UserRole) ?? 'user';
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as UserRole ?? 'user';
+      }
+      return session;
+    },
   },
-  async session({ session, token }) {
-    if (session.user) {
-      session.user.id = token.id as string;
-      session.user.role = token.role as UserRole ?? 'user';
-    }
-    return session;
-  },
-},
   secret: process.env.NEXTAUTH_SECRET,
   useSecureCookies: process.env.NODE_ENV === 'production',
 };

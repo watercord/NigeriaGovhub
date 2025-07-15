@@ -73,6 +73,7 @@ export const verificationToken = mysqlTable('verificationToken', {
 
 // PasswordResetToken table
 export const passwordResetToken = mysqlTable('passwordResetToken', {
+  id: varchar('id', { length: 255 }).primaryKey(),
   identifier: varchar('identifier', { length: 255 }).notNull(),
   token: varchar('token', { length: 255 }).notNull(),
   expires: datetime('expires').notNull(),
