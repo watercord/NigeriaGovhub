@@ -1,4 +1,3 @@
-
 "use server";
 import 'dotenv/config';
 import { revalidatePath } from 'next/cache';
@@ -41,24 +40,23 @@ import {
   removeNewsBookmarkInDb,
   isNewsArticleBookmarked,
   getUserBookmarkedNewsFromDb,
-  addNewsCommentToDb,
+  addNewsCommentInDb,
   toggleNewsLikeInDb,
   getUserByEmail,
-  getFullUserByEmail
+  getFullUserByEmail,
 } from './data';
+import { db } from '../db/drizzle';
+import { user, project, newsarticle, service, video, verificationToken, passwordResetToken, feedback, ministry, state } from '../db/schema';
 import type { Feedback as AppFeedback, User as AppUser, Project as AppProject, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, Video as AppVideo, NewsArticleFormData, ProjectFormData, ServiceFormData, VideoFormData, SiteSettings, UserDashboardStats } from '@/types';
 import type { SiteSettingsFormData } from '@/app/dashboard/admin/site-settings/page';
-import prisma from './prisma';
-import { Prisma } from '@prisma/client';
+import { eq, and, ne, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { getServerSession  } from 'next-auth';
+import { getServerSession } from 'next-auth';
 import { createHash } from 'crypto';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { createVerificationToken, getVerificationTokenByToken } from './verification-token';
 import { sendVerificationEmail, sendPasswordResetEmail } from './mail';
 import { createPasswordResetToken, getPasswordResetTokenByToken } from './password-reset-token';
-
-
 
 export interface SubmitFeedbackResult {
   success: boolean;
@@ -69,7 +67,7 @@ export interface SubmitFeedbackResult {
 
 export async function submitProjectFeedback(
   projectId: string,
-  formData: { userName: string; comment: string; rating?: number; userId?: string | null; }
+  formData: { userName: string; comment: string; rating?: number; userId?: string | null }
 ): Promise<SubmitFeedbackResult> {
   try {
     const sentimentInput: SummarizeFeedbackSentimentInput = {
@@ -96,19 +94,17 @@ export async function submitProjectFeedback(
     revalidatePath(`/dashboard/user/feedback`);
     revalidatePath(`/dashboard/user`);
 
-
     return {
       success: true,
       message: 'Feedback submitted successfully!',
       feedback: savedFeedback,
       sentimentSummary: sentimentOutput.sentimentSummary,
     };
-
   } catch (error) {
     console.error('Error submitting feedback:', error);
     let errorMessage = 'An unexpected error occurred.';
     if (error instanceof Error) {
-        errorMessage = error.message;
+      errorMessage = error.message;
     }
     return { success: false, message: `Failed to submit feedback: ${errorMessage}` };
   }
@@ -127,19 +123,18 @@ export async function deleteUser(userId: string): Promise<DeleteUserResult> {
       revalidatePath("/dashboard/admin/manage-users");
       return { success: true, message: "User profile deleted successfully." };
     } else {
-      console.error("Prisma delete error (public.users):", error);
+      console.error("Drizzle delete error (user):", error);
       return { success: false, message: `Failed to delete user profile: ${error?.message || 'Unknown error'}` };
     }
   } catch (error) {
     console.error('Error in deleteUser server action:', error);
     let errorMessage = 'An unexpected error occurred while deleting the user profile.';
     if (error instanceof Error) {
-        errorMessage = error.message;
+      errorMessage = error.message;
     }
     return { success: false, message: errorMessage };
   }
 }
-
 
 export async function getUserProfile(userId: string): Promise<AppUser | null> {
   try {
@@ -163,20 +158,18 @@ export async function addProject(
 ): Promise<ActionResult<AppProject>> {
   try {
     const dataToSave: ProjectCreationData = {
-  title: formData.title,
-  subtitle: formData.subtitle,
-  ministry_id: formData.ministryId,
-  state_id: formData.stateId,
-  status: formData.status,
-  start_date: formData.startDate,
-  expected_end_date: formData.expectedEndDate ?? null, // Explicitly set to null for new projects
-  description: formData.description,
-  budget: formData.budget ? Number(formData.budget) : undefined,
- expenditure: formData.expenditure ? Number(formData.expenditure) : undefined,
-  tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
-  // images: [],
-  // impact_stats: [],
-};
+      title: formData.title,
+      subtitle: formData.subtitle,
+      ministry_id: formData.ministryId,
+      state_id: formData.stateId,
+      status: formData.status,
+      start_date: formData.startDate,
+      expected_end_date: formData.expectedEndDate ?? null,
+      description: formData.description,
+      budget: formData.budget ? Number(formData.budget) : null,
+      expenditure: formData.expenditure ? Number(formData.expenditure) : null,
+      tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
+    };
 
     const newProject = await saveProjectToDb(dataToSave);
     if (!newProject) {
@@ -192,8 +185,8 @@ export async function addProject(
     let errorMessage = 'An unexpected error occurred while adding the project.';
     if (error instanceof Error) {
       errorMessage = error.message;
-      if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('title')) {
-          errorMessage = 'A project with this title already exists.';
+      if (error.message.includes('Duplicate entry') && error.message.includes('title')) {
+        errorMessage = 'A project with this title already exists.';
       }
     }
     return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
@@ -214,15 +207,8 @@ export async function updateProject(
       start_date: formData.startDate,
       expected_end_date: formData.expectedEndDate,
       description: formData.description,
-      budget:
-  formData.budget !== undefined && formData.budget !== null
-    ? Number(formData.budget)
-    : undefined,
-
-expenditure:
-  formData.expenditure !== undefined && formData.expenditure !== null
-    ? Number(formData.expenditure)
-    : undefined,
+      budget: formData.budget !== undefined && formData.budget !== null ? Number(formData.budget) : null,
+      expenditure: formData.expenditure !== undefined && formData.expenditure !== null ? Number(formData.expenditure) : null,
       tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
     };
 
@@ -239,10 +225,10 @@ expenditure:
   } catch (error) {
     console.error('Error updating project:', error);
     let errorMessage = 'An unexpected error occurred while updating the project.';
-     if (error instanceof Error) {
+    if (error instanceof Error) {
       errorMessage = error.message;
-      if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('title')) {
-          errorMessage = 'A project with this title already exists.';
+      if (error.message.includes('Duplicate entry') && error.message.includes('title')) {
+        errorMessage = 'A project with this title already exists.';
       }
     }
     return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
@@ -265,25 +251,146 @@ export async function deleteProject(id: string): Promise<ActionResult> {
   }
 }
 
-
 export async function getProjectByIdAction(id: string): Promise<AppProject | null> {
+  /**
+   * Helper function to safely convert values to number or null
+   * Handles both direct numbers and string representations
+   */
+  const convertToNumber = (value: unknown): number | null => {
+    if (value === null || value === undefined) return null;
+    
+    if (typeof value === 'number') {
+      return isNaN(value) ? null : value;
+    }
+    
+    if (typeof value === 'string') {
+      // Handle empty strings and whitespace
+      if (value.trim() === '') return null;
+      
+      const num = Number(value);
+      return isNaN(num) ? null : num;
+    }
+    
+    return null;
+  };
+
   try {
-    const project = await getProjectById(id);
-    return project;
+    const projectResult = await db
+      .select({
+        project: {
+          id: project.id,
+          title: project.title,
+          subtitle: project.subtitle,
+          ministry_id: project.ministry_id,
+          state_id: project.state_id,
+          status: project.status,
+          start_date: project.start_date,
+          expected_end_date: project.expected_end_date,
+          actual_end_date: project.actual_end_date,
+          description: project.description,
+          images: project.images,
+          videos: project.videos,
+          impact_stats: project.impact_stats,
+          budget: project.budget,
+          expenditure: project.expenditure,
+          created_at: project.created_at,
+          last_updated_at: project.last_updated_at,
+        },
+        ministry: {
+          id: ministry.id,
+          name: ministry.name,
+        },
+        state: {
+          id: state.id,
+          name: state.name,
+          capital: state.capital,
+        },
+      })
+      .from(project)
+      .leftJoin(ministry, eq(project.ministry_id, ministry.id))
+      .leftJoin(state, eq(project.state_id, state.id))
+      .where(eq(project.id, id));
+
+    if (!projectResult || projectResult.length === 0) return null;
+
+    const projectData = projectResult[0];
+
+    const feedbackResults = await db
+      .select({
+        id: feedback.id,
+        project_id: feedback.project_id,
+        user_id: feedback.user_id,
+        user_name: feedback.user_name,
+        comment: feedback.comment,
+        rating: feedback.rating,
+        sentiment_summary: feedback.sentiment_summary,
+        created_at: feedback.created_at,
+      })
+      .from(feedback)
+      .where(eq(feedback.project_id, id));
+
+    return {
+      ...projectData.project,
+      ministry: projectData.ministry || { id: '', name: '' },
+      state: projectData.state || { id: '', name: '', capital: null },
+      startDate: projectData.project.start_date,
+      expectedEndDate: projectData.project.expected_end_date,
+      actualEndDate: projectData.project.actual_end_date,
+      impactStats: projectData.project.impact_stats ? JSON.parse(projectData.project.impact_stats) : [],
+      lastUpdatedAt: projectData.project.last_updated_at ? new Date(projectData.project.last_updated_at) : new Date(),
+      tags: [],
+      status: projectData.project.status as 'Planned' | 'Ongoing' | 'Completed' | 'On Hold',
+      images: projectData.project.images
+        ? (typeof projectData.project.images === 'string'
+            ? JSON.parse(projectData.project.images)
+            : projectData.project.images
+          ).map((img: any) => ({
+            url: img.url || '',
+            alt: img.alt || '',
+            dataAiHint: img.dataAiHint || undefined,
+          }))
+        : [],
+      videos: projectData.project.videos
+        ? (typeof projectData.project.videos === 'string'
+            ? JSON.parse(projectData.project.videos)
+            : projectData.project.videos
+          ).map((video: any) => ({
+            id: video.id || '',
+            title: video.title || '',
+            url: video.url || '',
+            thumbnailUrl: video.thumbnailUrl || null,
+            dataAiHint: video.dataAiHint || null,
+            description: video.description || null,
+            createdAt: new Date(video.createdAt),
+            updatedAt: new Date(video.updatedAt),
+          }))
+        : undefined,
+      budget: convertToNumber(projectData.project.budget),
+      expenditure: convertToNumber(projectData.project.expenditure),
+      feedback: feedbackResults.map(f => ({
+  ...f,
+  created_at: f.created_at ? new Date(f.created_at) : null,
+})),
+
+    };
   } catch (error) {
-    console.error(`Error in getProjectByIdAction for ID ${id}:`, error);
+    console.error(`Error fetching project by ID ${id}:`, error);
     return null;
   }
 }
-
 
 export async function addNewsArticle(
   newsData: NewsArticleFormData
 ): Promise<ActionResult<AppNewsArticle>> {
   try {
-    const existingArticleBySlug = await prisma.newsarticle.findUnique({ where: { slug: newsData.slug }});
-    if (existingArticleBySlug) {
-      return { success: false, message: `A news article with the slug "${newsData.slug}" already exists.`};
+    const existingArticle = await db
+      .select()
+      .from(newsarticle)
+      .where(eq(newsarticle.slug, newsData.slug))
+      .limit(1);
+
+    if (existingArticle.length > 0) {
+      return { success: false, message: `A news article with the slug "${newsData.slug}" already exists.` };
     }
 
     const dataToSave: NewsArticleCreationData = {
@@ -310,10 +417,10 @@ export async function addNewsArticle(
   } catch (error) {
     console.error('Error adding news article:', error);
     let errorMessage = 'An unexpected error occurred while adding the news article.';
-     if (error instanceof Error) {
+    if (error instanceof Error) {
       errorMessage = error.message;
-      if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('slug')) {
-          errorMessage = 'A news article with this slug already exists.';
+      if (error.message.includes('Duplicate entry') && error.message.includes('slug')) {
+        errorMessage = 'A news article with this slug already exists.';
       }
     }
     return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
@@ -326,14 +433,14 @@ export async function updateNewsArticle(
 ): Promise<ActionResult<AppNewsArticle>> {
   try {
     if (newsData.slug) {
-      const existingArticleBySlug = await prisma.newsarticle.findFirst({
-        where: {
-          slug: newsData.slug,
-          id: { not: id }
-        }
-      });
-      if (existingArticleBySlug) {
-        return { success: false, message: `Another news article with the slug "${newsData.slug}" already exists.`};
+      const existingArticle = await db
+        .select()
+        .from(newsarticle)
+        .where(and(eq(newsarticle.slug, newsData.slug), ne(newsarticle.id, id)))
+        .limit(1);
+
+      if (existingArticle.length > 0) {
+        return { success: false, message: `Another news article with the slug "${newsData.slug}" already exists.` };
       }
     }
 
@@ -348,7 +455,6 @@ export async function updateNewsArticle(
       dataAiHint: newsData.dataAiHint,
     };
 
-
     const updatedArticle = await updateNewsArticleInDb(id, dataToUpdate);
     if (!updatedArticle) {
       return { success: false, message: 'Failed to update news article in the database.' };
@@ -362,16 +468,15 @@ export async function updateNewsArticle(
   } catch (error) {
     console.error('Error updating news article:', error);
     let errorMessage = 'An unexpected error occurred while updating the news article.';
-     if (error instanceof Error) {
+    if (error instanceof Error) {
       errorMessage = error.message;
-      if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('slug')) {
-          errorMessage = 'A news article with this slug already exists.';
+      if (error.message.includes('Duplicate entry') && error.message.includes('slug')) {
+        errorMessage = 'A news article with this slug already exists.';
       }
     }
     return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
   }
 }
-
 
 export async function deleteNewsArticle(id: string): Promise<ActionResult> {
   try {
@@ -394,23 +499,25 @@ export async function addService(
   serviceData: ServiceFormData
 ): Promise<ActionResult<AppServiceItem>> {
   try {
-    const existingServiceBySlug = await prisma.service.findUnique({ where: { slug: serviceData.slug } });
-    if (existingServiceBySlug) {
+    const existingService = await db
+      .select()
+      .from(service)
+      .where(eq(service.slug, serviceData.slug))
+      .limit(1);
+
+    if (existingService.length > 0) {
       return { success: false, message: `A service with the slug "${serviceData.slug}" already exists.` };
     }
 
     const dataToSave: ServiceCreationData = {
-      // id: crypto.randomUUID(),
-      // updatedAt: new Date(),
       title: serviceData.title,
       slug: serviceData.slug,
-      // updatedAt: serviceData.updatedAt,
       summary: serviceData.summary,
       category: serviceData.category,
-      link: serviceData.link,
-      imageUrl: serviceData.imageUrl,
+      link: serviceData.link ?? null,
+      imageUrl: serviceData.imageUrl ?? null,
       dataAiHint: serviceData.dataAiHint ?? null,
-      iconName: serviceData.iconName,
+      iconName: serviceData.iconName ?? null,
     };
 
     const newService = await saveServiceToDb(dataToSave);
@@ -428,7 +535,7 @@ export async function addService(
     let errorMessage = 'An unexpected error occurred while adding the service.';
     if (error instanceof Error) {
       errorMessage = error.message;
-      if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('slug')) {
+      if (error.message.includes('Duplicate entry') && error.message.includes('slug')) {
         errorMessage = 'A service with this slug already exists.';
       }
     }
@@ -442,13 +549,13 @@ export async function updateService(
 ): Promise<ActionResult<AppServiceItem>> {
   try {
     if (serviceData.slug) {
-      const existingServiceBySlug = await prisma.service.findFirst({
-        where: {
-          slug: serviceData.slug,
-          id: { not: id }
-        }
-      });
-      if (existingServiceBySlug) {
+      const existingService = await db
+        .select()
+        .from(service)
+        .where(and(eq(service.slug, serviceData.slug), ne(service.id, id)))
+        .limit(1);
+
+      if (existingService.length > 0) {
         return { success: false, message: `Another service with the slug "${serviceData.slug}" already exists.` };
       }
     }
@@ -458,12 +565,11 @@ export async function updateService(
       slug: serviceData.slug,
       summary: serviceData.summary,
       category: serviceData.category,
-      link: serviceData.link,
-      imageUrl: serviceData.imageUrl,
-      dataAiHint: serviceData.dataAiHint,
-      iconName: serviceData.iconName,
+      link: serviceData.link ?? null,
+      imageUrl: serviceData.imageUrl ?? null,
+      dataAiHint: serviceData.dataAiHint ?? null,
+      iconName: serviceData.iconName ?? null,
     };
-
 
     const updatedService = await updateServiceInDb(id, dataToUpdate);
     if (!updatedService) {
@@ -480,7 +586,7 @@ export async function updateService(
     let errorMessage = 'An unexpected error occurred while updating the service.';
     if (error instanceof Error) {
       errorMessage = error.message;
-      if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('slug')) {
+      if (error.message.includes('Duplicate entry') && error.message.includes('slug')) {
         errorMessage = 'A service with this slug already exists.';
       }
     }
@@ -514,7 +620,6 @@ export async function fetchAllProjectsAction(): Promise<AppProject[]> {
   }
 }
 
-
 export async function addVideo(
   videoData: VideoFormData
 ): Promise<ActionResult<AppVideo>> {
@@ -525,7 +630,7 @@ export async function addVideo(
       thumbnailUrl: videoData.thumbnailUrl ?? null,
       dataAiHint: videoData.dataAiHint ?? null,
       description: videoData.description ?? null,
-    }
+    };
 
     const newVideo = await saveVideoToDb(dataToSave);
     if (!newVideo) {
@@ -551,7 +656,7 @@ export async function getVideoByIdAction(id: string): Promise<AppVideo | null> {
     return video;
   } catch (error) {
     console.error(`Error in getVideoByIdAction for ID ${id}:`, error);
-    return null; 
+    return null;
   }
 }
 
@@ -560,38 +665,27 @@ export async function updateVideo(
   videoData: Partial<VideoFormData>
 ): Promise<{ success: boolean; message: string; errorDetails?: any }> {
   try {
-    const response = await fetch(`/api/videos/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(videoData),
-    });
+    const dataToUpdate: Partial<VideoCreationData> = {
+      title: videoData.title,
+      url: videoData.url,
+      thumbnailUrl: videoData.thumbnailUrl,
+      dataAiHint: videoData.dataAiHint,
+      description: videoData.description,
+    };
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: result.message || "Failed to update video.",
-        errorDetails: result.errors || result,
-      };
+    const updatedVideo = await updateVideoInDb(id, dataToUpdate);
+    if (!updatedVideo) {
+      return { success: false, message: 'Failed to update video in the database.' };
     }
 
-    return {
-      success: true,
-      message: result.message || "Video updated successfully.",
-    };
+    revalidatePath('/dashboard/admin/manage-videos');
+    revalidatePath('/');
+    return { success: true, message: 'Video updated successfully!' };
   } catch (error) {
-    console.error("updateVideo error:", error);
-    return {
-      success: false,
-      message: "An unexpected error occurred while updating video.",
-      errorDetails: error,
-    };
+    console.error('Error updating video:', error);
+    return { success: false, message: 'An unexpected error occurred while updating video.', errorDetails: error instanceof Error ? error.stack : undefined };
   }
 }
-
 
 export async function deleteVideo(id: string): Promise<ActionResult> {
   try {
@@ -609,23 +703,23 @@ export async function deleteVideo(id: string): Promise<ActionResult> {
   }
 }
 
-
-// --- Admin Dashboard Stats ---
 export async function fetchAdminDashboardStats() {
   try {
-    const totalProjects = await prisma.project.count();
-    const totalUsers = await prisma.user.count();
-    const totalNewsArticles = await prisma.newsarticle.count();
-    const totalServices = await prisma.service.count();
-    const totalVideos = await prisma.video.count();
-    return { totalProjects, totalUsers, totalNewsArticles, totalServices, totalVideos };
+    const [projectCount, userCount, newsCount, serviceCount, videoCount] = await Promise.all([
+      db.select({ count: sql<number>`COUNT(*)`.as('count') }).from(project).then(r => r[0].count),
+      db.select({ count: sql<number>`COUNT(*)`.as('count') }).from(user).then(r => r[0].count),
+      db.select({ count: sql<number>`COUNT(*)`.as('count') }).from(newsarticle).then(r => r[0].count),
+      db.select({ count: sql<number>`COUNT(*)`.as('count') }).from(service).then(r => r[0].count),
+      db.select({ count: sql<number>`COUNT(*)`.as('count') }).from(video).then(r => r[0].count),
+    ]);
+
+    return { totalProjects: projectCount, totalUsers: userCount, totalNewsArticles: newsCount, totalServices: serviceCount, totalVideos: videoCount };
   } catch (error) {
     console.error("Error fetching admin dashboard stats:", error);
     throw new Error("Failed to load dashboard statistics.");
   }
 }
 
-// --- Site Settings Actions ---
 interface SiteSettingsResult extends ActionResult {
   settings?: SiteSettings | null;
 }
@@ -644,10 +738,9 @@ export async function updateSiteSettingsAction(
 ): Promise<SiteSettingsResult> {
   try {
     const settingsToSave: Partial<SiteSettings> = {
-      siteName: formData.siteName,
-      maintenanceMode: formData.maintenanceMode,
-      contactEmail: formData.contactEmail,
-      footerMessage: formData.footerMessage,
+      siteName: formData.siteName ?? undefined,
+      contactEmail: formData.contactEmail ?? undefined,
+      footerMessage: formData.footerMessage ?? undefined,
     };
     const updatedSettings = await updateSiteSettingsInDb(settingsToSave);
     if (!updatedSettings) {
@@ -663,29 +756,19 @@ export async function updateSiteSettingsAction(
     return {
       success: false,
       message: 'An unexpected error occurred while saving site settings.',
-      errorDetails: error instanceof Error ? error.stack : undefined
+      errorDetails: error instanceof Error ? error.stack : undefined,
     };
   }
 }
 
-// --- User Creation Action for Credentials Signup ---
-interface CreateUserResult {
+export interface CreateUserResult {
   success: boolean;
   message: string;
 }
 
 export async function createUserAction(data: { name: string; email: string; password?: string }): Promise<CreateUserResult> {
   try {
-    let existingUser;
-    try {
-       existingUser = await getFullUserByEmail(data.email);
-    } catch (e: any) {
-        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2020') {
-            return { success: false, message: "An account with this email already exists but has a data issue. Please try logging in with your original method (e.g., Google) or contact support." };
-        }
-        throw e;
-    }
-
+    const existingUser = await getFullUserByEmail(data.email);
     if (existingUser) {
       return { success: false, message: "An account with this email already exists." };
     }
@@ -701,17 +784,28 @@ export async function createUserAction(data: { name: string; email: string; pass
     const hash = createHash('md5').update(sanitizedEmail).digest('hex');
     const gravatarUrl = `https://www.gravatar.com/avatar/${hash}?d=mp`;
 
-    await prisma.user.create({
-      data: {
-        id: crypto.randomUUID(),
+    const userId = crypto.randomUUID();
+    await db
+      .insert(user)
+      .values({
+        id: userId,
         name: data.name,
         email: data.email,
         password: hashedPassword,
         updated_at: new Date(),
         image: gravatarUrl,
+      })
+      .execute();
 
-      },
-    });
+    const [newUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1);
+
+    if (!newUser) {
+      return { success: false, message: "Failed to retrieve newly created user." };
+    }
 
     const verificationToken = await createVerificationToken(data.email);
     await sendVerificationEmail(verificationToken.identifier, verificationToken.token);
@@ -721,11 +815,11 @@ export async function createUserAction(data: { name: string; email: string; pass
     console.error("Error creating user:", error);
     let errorMessage = "An unexpected error occurred during user creation.";
     if (error instanceof Error) {
-        if ((error as any).code === 'P2002' && (error as any).meta?.target?.includes('email')) {
-             errorMessage = 'An account with this email already exists.';
-        } else {
-            errorMessage = error.message;
-        }
+      if (error.message.includes('Duplicate entry') && error.message.includes('email')) {
+        errorMessage = 'An account with this email already exists.';
+      } else {
+        errorMessage = error.message;
+      }
     }
     return { success: false, message: errorMessage };
   }
@@ -735,38 +829,31 @@ export async function newVerificationAction(token: string): Promise<{ success?: 
   const existingToken = await getVerificationTokenByToken(token);
 
   if (!existingToken) {
-      return { error: "Token does not exist!" };
+    return { error: "Token does not exist!" };
   }
 
   const hasExpired = new Date(existingToken.expires) < new Date();
 
   if (hasExpired) {
-      return { error: "Token has expired!" };
+    return { error: "Token has expired!" };
   }
 
   const existingUser = await getUserByEmail(existingToken.identifier);
 
   if (!existingUser) {
-      return { error: "Email does not exist!" };
+    return { error: "Email does not exist!" };
   }
 
-  await prisma.user.update({
-      where: { id: existingUser.id },
-      data: {
-          emailVerified: new Date(),
-          email: existingToken.identifier,
-      }
-  });
+  await db
+    .update(user)
+    .set({ emailVerified: new Date(), email: existingToken.identifier })
+    .where(eq(user.id, existingUser.id));
 
-  await prisma.verificationToken.delete({
-      where: { token: existingToken.token }
-  });
+  await db.delete(verificationToken).where(eq(verificationToken.token, existingToken.token));
 
   return { success: "Email verified successfully!" };
 }
 
-
-// --- Server Actions for Fetching Data for Admin Pages ---
 export async function fetchAllNewsArticlesAction(): Promise<AppNewsArticle[]> {
   try {
     return await fetchAllNewsArticlesFromDb();
@@ -812,8 +899,6 @@ export async function fetchAllFeedbackWithProjectTitlesAction(): Promise<Array<A
   }
 }
 
-// --- NEW Server Actions for User Dashboard ---
-
 export async function getUserDashboardStatsAction(): Promise<UserDashboardStats> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -823,7 +908,6 @@ export async function getUserDashboardStatsAction(): Promise<UserDashboardStats>
     return await getUserDashboardStatsFromDb(session.user.id);
   } catch (error) {
     console.error("Error getting user dashboard stats:", error);
-    // Return default/empty stats on error
     return {
       feedbackSubmitted: 0,
       bookmarkedProjects: 0,
@@ -833,20 +917,20 @@ export async function getUserDashboardStatsAction(): Promise<UserDashboardStats>
   }
 }
 
-export async function getUserFeedbackAction(): Promise<Array<AppFeedback & { projectTitle: string, projectId: string }>> {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-        throw new Error("User not authenticated");
-    }
-    try {
-        return await getUserFeedbackFromDb(session.user.id);
-    } catch (error) {
-        console.error("Error getting user feedback:", error);
-        return [];
-    }
+export async function getUserFeedbackAction(): Promise<Array<AppFeedback & { projectTitle: string; projectId: string }>> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated");
+  }
+  try {
+    return await getUserFeedbackFromDb(session.user.id);
+  } catch (error) {
+    console.error("Error getting user feedback:", error);
+    return [];
+  }
 }
 
-export async function updateUserNameAction(newName: string): Promise<{ success: boolean; message: string; }> {
+export async function updateUserNameAction(newName: string): Promise<{ success: boolean; message: string }> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return { success: false, message: "User not authenticated" };
@@ -854,9 +938,8 @@ export async function updateUserNameAction(newName: string): Promise<{ success: 
   try {
     const updatedUser = await updateUserNameInDb(session.user.id, newName);
     if (!updatedUser) {
-        return { success: false, message: "Failed to update user name in database." };
+      return { success: false, message: "Failed to update user name in database." };
     }
-    // Revalidate paths that show user name
     revalidatePath('/dashboard/user/profile');
     revalidatePath('/dashboard/user');
 
@@ -881,43 +964,40 @@ export async function getUserBookmarkedNewsAction(): Promise<AppNewsArticle[]> {
 }
 
 export async function checkNewsBookmarkStatusAction(articleId: string): Promise<boolean> {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-        return false;
-    }
-    return await isNewsArticleBookmarked(session.user.id, articleId);
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return false;
+  }
+  return await isNewsArticleBookmarked(session.user.id, articleId);
 }
 
-export async function toggleNewsBookmarkAction(articleId: string): Promise<{ success: boolean; message: string; }> {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-        return { success: false, message: "You must be logged in to bookmark articles." };
-    }
+export async function toggleNewsBookmarkAction(articleId: string): Promise<{ success: boolean; message: string }> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, message: "You must be logged in to bookmark articles." };
+  }
 
-    try {
-        const isBookmarked = await isNewsArticleBookmarked(session.user.id, articleId);
+  try {
+    const isBookmarked = await isNewsArticleBookmarked(session.user.id, articleId);
 
-        if (isBookmarked) {
-            await removeNewsBookmarkInDb(session.user.id, articleId);
-            revalidatePath(`/dashboard/user/bookmarked-news`);
-            revalidatePath(`/dashboard/user`);
-            return { success: true, message: "Article removed from bookmarks." };
-        } else {
-            await addNewsBookmarkInDb(session.user.id, articleId);
-            revalidatePath(`/dashboard/user/bookmarked-news`);
-            revalidatePath(`/dashboard/user`);
-            return { success: true, message: "Article added to bookmarks." };
-        }
-    } catch (error) {
-        console.error("Error toggling news bookmark:", error);
-        return { success: false, message: "An unexpected error occurred." };
+    if (isBookmarked) {
+      await removeNewsBookmarkInDb(session.user.id, articleId);
+      revalidatePath(`/dashboard/user/bookmarked-news`);
+      revalidatePath(`/dashboard/user`);
+      return { success: true, message: "Article removed from bookmarks." };
+    } else {
+      await addNewsBookmarkInDb(session.user.id, articleId);
+      revalidatePath(`/dashboard/user/bookmarked-news`);
+      revalidatePath(`/dashboard/user`);
+      return { success: true, message: "Article added to bookmarks." };
     }
+  } catch (error) {
+    console.error("Error toggling news bookmark:", error);
+    return { success: false, message: "An unexpected error occurred." };
+  }
 }
 
-
-// --- NEW Server Actions for News Comments and Likes ---
-
-export async function addNewsCommentAction(articleId: string, content: string): Promise<{ success: boolean; message: string; }> {
+export async function addNewsCommentAction(articleId: string, content: string): Promise<{ success: boolean; message: string }> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return { success: false, message: "You must be logged in to comment." };
@@ -928,9 +1008,9 @@ export async function addNewsCommentAction(articleId: string, content: string): 
   }
 
   try {
-    await addNewsCommentToDb(articleId, session.user.id, content);
+    await addNewsCommentInDb(articleId, session.user.id, content);
 
-    const article = await prisma.newsarticle.findUnique({ where: { id: articleId }, select: { slug: true } });
+    const [article] = await db.select({ slug: newsarticle.slug }).from(newsarticle).where(eq(newsarticle.id, articleId));
     if (article) {
       revalidatePath(`/news/${article.slug}`);
     }
@@ -942,7 +1022,7 @@ export async function addNewsCommentAction(articleId: string, content: string): 
   }
 }
 
-export async function toggleNewsLikeAction(articleId: string): Promise<{ success: boolean; message: string; }> {
+export async function toggleNewsLikeAction(articleId: string): Promise<{ success: boolean; message: string }> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return { success: false, message: "You must be logged in to like articles." };
@@ -951,7 +1031,7 @@ export async function toggleNewsLikeAction(articleId: string): Promise<{ success
   try {
     await toggleNewsLikeInDb(articleId, session.user.id);
 
-    const article = await prisma.newsarticle.findUnique({ where: { id: articleId }, select: { slug: true } });
+    const [article] = await db.select({ slug: newsarticle.slug }).from(newsarticle).where(eq(newsarticle.id, articleId));
     if (article) {
       revalidatePath(`/news/${article.slug}`);
     }
@@ -962,8 +1042,6 @@ export async function toggleNewsLikeAction(articleId: string): Promise<{ success
     return { success: false, message: "An unexpected error occurred." };
   }
 }
-
-// --- Forgot/Reset Password Actions ---
 
 export async function resetAction(email: string): Promise<{ success?: string; error?: string }> {
   const existingUser = await getUserByEmail(email);
@@ -1003,105 +1081,50 @@ export async function newPasswordAction(password: string, token: string | null):
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  await prisma.user.update({
-    where: { id: existingUser.id },
-    data: { password: hashedPassword },
-  });
+  await db.update(user).set({ password: hashedPassword }).where(eq(user.id, existingUser.id));
 
-  await prisma.passwordResetToken.delete({
-    where: { id: existingToken.id },
-  });
+  await db.delete(passwordResetToken).where(eq(passwordResetToken.token, existingToken.token));
 
   return { success: "Password updated successfully!" };
 }
 
-async function getProjectById(id: string): Promise<AppProject | null> {
+export async function fetchHomepageDataAction() {
   try {
-    const dbProject = await prisma.project.findUnique({
-      where: { id },
-      include: {
-        feedback_list: true
-      }
-    });
+    const [projectsData, newsData, servicesData, videosData] = await Promise.all([
+      fetchAllProjectsFromDb(),
+      fetchAllNewsArticlesFromDb(),
+      fetchAllServicesFromDb(),
+      fetchAllVideosFromDb(),
+    ]);
 
-    if (!dbProject) return null;
-
-    // Convert Prisma project to AppProject interface
     return {
-      ...dbProject,
-      ministry: { id: '', name: '' }, // Simplified for now
-      state: { id: '', name: '' }, // Simplified for now
-      startDate: dbProject.start_date,
-      expectedEndDate: dbProject.expected_end_date,
-      impactStats: dbProject.impact_stats ? JSON.parse(dbProject.impact_stats) : [],
-      lastUpdatedAt: dbProject.last_updated_at,
-      tags: [], // Placeholder - need to implement proper fetching
-      status: dbProject.status as 'Planned' | 'Ongoing' | 'Completed' | 'On Hold',
-      // Initialize images array with proper type
-      images: dbProject.images ? JSON.parse(dbProject.images).map((img: any) => ({
-        url: img.url || '',
-        alt: img.alt || '',
-        dataAiHint: img.dataAiHint || undefined
-      })) : [],
-      // Initialize videos array with proper type
-      videos: dbProject.videos ? JSON.parse(dbProject.videos).map((video: any) => ({
-        id: video.id || '',
-        title: video.title || '',
-        url: video.url || '',
-        thumbnailUrl: video.thumbnailUrl || null,
-        dataAiHint: video.dataAiHint || null,
-        description: video.description || null,
-        createdAt: new Date(video.createdAt),
-        updatedAt: new Date(video.updatedAt)
-      })) : undefined,
-      // Convert Decimal budget and expenditure to number
-      budget: dbProject.budget ? Number(dbProject.budget) : null,
-      expenditure: dbProject.expenditure ? Number(dbProject.expenditure) : null,
-      feedback: dbProject.feedback_list.map(feedback => ({
-        ...feedback,
-        created_at: feedback.created_at.toISOString()
-      }))
+      projects: projectsData.slice(0, 3),
+      news: newsData.slice(0, 3),
+      services: servicesData.slice(0, 3),
+      videos: videosData.slice(0, 3),
+      allVideosCount: videosData.length,
+      error: null,
     };
   } catch (error) {
-    console.error(`Error fetching project by ID ${id}:`, error);
-    return null;
+    console.error("Error fetching homepage data:", error);
+    return {
+      projects: [],
+      news: [],
+      services: [],
+      videos: [],
+      allVideosCount: 0,
+      error: "Failed to load page data.",
+    };
   }
 }
 
-export async function fetchHomepageDataAction() {
-    try {
-        const projectsData = await fetchAllProjectsFromDb();
-        const newsData = await fetchAllNewsArticlesFromDb();
-        const servicesData = await fetchAllServicesFromDb();
-        const videosData = await fetchAllVideosFromDb();
-
-        return {
-            projects: projectsData.slice(0, 3),
-            news: newsData.slice(0, 3),
-            services: servicesData.slice(0, 3),
-            videos: videosData.slice(0, 3),
-            allVideosCount: videosData.length,
-            error: null
-        };
-    } catch (error) {
-        console.error("Error fetching homepage data:", error);
-        return {
-            projects: [],
-            news: [],
-            services: [],
-            videos: [],
-            allVideosCount: 0,
-            error: "Failed to load page data."
-        }
-    }
-}
 export async function getNewsArticleByIdAction(id: string): Promise<AppNewsArticle | null> {
   try {
     const article = await getNewsArticleByIdFromDb(id);
     return article;
   } catch (error) {
     console.error(`Error in getNewsArticleByIdAction for ID ${id}:`, error);
-    return null; 
+    return null;
   }
 }
 
@@ -1111,6 +1134,6 @@ export async function getServiceByIdAction(id: string): Promise<AppServiceItem |
     return service;
   } catch (error) {
     console.error(`Error in getServiceByIdAction for ID ${id}:`, error);
-    return null; 
+    return null;
   }
 }

@@ -1,19 +1,21 @@
-
-import type { project as PrismaProject, newsarticle as PrismaNewsArticle, service as PrismaService, video as PrismaVideo, sitesetting as PrismaSiteSetting, user as PrismaUser, tag as PrismaTag } from '@prisma/client';
 import type * as LucideIcons from 'lucide-react';
+import type { InferSelectModel } from 'drizzle-orm';
+import type { project, newsarticle, service, video, sitesetting, user, feedback, tag, ministry, state } from '../db/schema';
+import type { ComponentType } from 'react';
 
-
-export interface Ministry {
+export type Ministry = InferSelectModel<typeof ministry> & {
   id: string;
   name: string;
-}
+};
 
-export interface State {
+export type State = InferSelectModel<typeof state> & {
   id: string;
   name: string;
-}
+  capital?: string | null; // Added to match db/schema.ts
+};
 
-export interface Feedback {
+// src/types/index.ts
+export type Feedback = InferSelectModel<typeof feedback> & {
   id: string;
   project_id: string;
   user_id: string | null;
@@ -21,35 +23,34 @@ export interface Feedback {
   comment: string;
   rating: number | null;
   sentiment_summary: string | null;
-  created_at: string;
-  user?: User;
-}
-
+  created_at: Date | null;
+  user?: User | null; // Allow null
+};
 
 export interface ImpactStat {
   label: string;
   value: string;
   iconName?: keyof typeof LucideIcons;
-  icon?: React.ElementType;
+  icon?: ComponentType<any>;
 }
 
-export interface Video {
+export type Video = InferSelectModel<typeof video> & {
   id: string;
   title: string;
   url: string;
-  thumbnailUrl?: string | null;
-  description?: string | null;
-  dataAiHint?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+  thumbnailUrl: string | null;
+  description: string | null;
+  dataAiHint: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
 
-export interface Tag {
+export type Tag = InferSelectModel<typeof tag> & {
   id: number;
   name: string;
-}
+};
 
-export interface Project {
+export type Project = InferSelectModel<typeof project> & {
   id: string;
   title: string;
   subtitle: string;
@@ -57,76 +58,74 @@ export interface Project {
   state: State;
   status: 'Ongoing' | 'Completed' | 'Planned' | 'On Hold';
   startDate: Date;
-  expectedEndDate?: Date | null;
-  actualEndDate?: Date | null;
+  expectedEndDate: Date | null;
+  actualEndDate: Date | null;
   description: string;
-  images: { url: string; alt: string, dataAiHint?: string }[];
+  images: { url: string; alt: string; dataAiHint?: string }[];
   videos?: Video[];
   impactStats: ImpactStat[];
-  budget?: number | null;
-  expenditure?: number | null;
-  tags?: string[]; // This will store tag names for display
-  lastUpdatedAt: Date;
-  feedback?: Feedback[];
-  ministry_id?: string | null;
-  state_id?: string | null;
-}
-
-// Updated User type for NextAuth.js compatibility
-export interface User {
+  budget: number | null;
+  expenditure: number | null;
+  tags: string[];
+  lastUpdatedAt: Date | null; // Changed to Date | null to match db/schema.ts
+  feedback: Feedback[];
+  ministry_id: string | null;
+  state_id: string | null;
+};
+export type User = InferSelectModel<typeof user> & {
   id: string;
-  name?: string | null;
-  email?: string | null;
-  emailVerified?: Date | null;
-  image?: string | null;
-  role?: 'user' | 'admin' | null;
-  created_at?: string | null;
-}
+  name: string | null;
+  email: string | null;
+  emailVerified: Date | null;
+  image: string | null;
+  role: 'user' | 'admin' | null;
+  created_at: Date | null;
+  password: string | null; // Add password
+  updated_at: Date | null; // Add updated_at
+};
 
 export interface NewsComment {
   id: string;
   content: string;
-  createdAt: Date;
+  createdAt: Date | null; // Allow null
   user: {
     id: string;
     name: string | null;
     image: string | null;
   };
-}
+};
 
-export interface NewsArticle {
+export type NewsArticle = InferSelectModel<typeof newsarticle> & {
   id: string;
   slug: string;
   title: string;
   summary: string;
-  imageUrl?: string | null;
-  dataAiHint?: string | null;
+  imageUrl: string | null;
+  dataAiHint: string | null;
   category: string;
-  publishedDate: Date;
+  publishedDate: Date | null;
   content: string;
-  createdAt: Date;
-  updatedAt: Date;
-  // Populated fields for detail view
+  createdAt: Date | null;
+  updatedAt: Date | null;
   comments: NewsComment[];
   likeCount: number;
   isLikedByUser: boolean;
-}
+};
 
-
-export interface ServiceItem {
+export type ServiceItem = InferSelectModel<typeof service> & {
   id: string;
   slug: string;
   title: string;
   summary: string;
-  iconName?: keyof typeof LucideIcons | null;
-  icon?: React.ElementType;
-  link?: string | null;
+  iconName: keyof typeof LucideIcons | null;
+  icon?: ComponentType<any>;
+  link: string | null;
   category: string;
-  imageUrl?: string | null;
-  dataAiHint?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+  imageUrl: string | null;
+  dataAiHint: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
 
 export const projectFormSchemaRaw = {
   title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(150),
@@ -138,14 +137,13 @@ export const projectFormSchemaRaw = {
   expectedEndDate: (z: any) => z.coerce.date().optional().nullable(),
   description: (z: any) => z.string().min(20, "Description must be at least 20 characters."),
   budget: (z: any) => z.preprocess(
-    (val: any) => (val === "" || val === null || val === undefined) ? undefined : Number(val),
+    (val: any) => (val === "" || val === null || val === undefined) ? null : Number(val),
     z.number().positive("Budget must be a positive number.").optional().nullable()
   ),
   expenditure: (z: any) => z.preprocess(
-    (val: any) => (val === "" || val === null || val === undefined) ? undefined : Number(val),
+    (val: any) => (val === "" || val === null || val === undefined) ? null : Number(val),
     z.number().positive("Expenditure must be a positive number.").optional().nullable()
   ),
-  // Tags from the form will be a comma-separated string of names
   tags: (z: any) => z.string().optional(),
 };
 
@@ -160,9 +158,8 @@ export type ProjectFormData = {
   description: string;
   budget?: number | null;
   expenditure?: number | null;
-  tags?: string; // Comma-separated tag names
+  tags?: string;
 };
-
 
 export const newsArticleFormSchemaRaw = {
   title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(200),
@@ -174,7 +171,6 @@ export const newsArticleFormSchemaRaw = {
   content: (z: any) => z.string()
     .min(50, "Content must be at least 50 characters.")
     .max(12000, "Content must not exceed 12,000 characters."),
-
   imageUrl: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
   dataAiHint: (z: any) => z.string().max(50, "AI hint too long.").optional().nullable(),
 };
@@ -229,18 +225,18 @@ export type VideoFormData = {
   description?: string | null;
 };
 
-export interface SiteSettings {
+export type SiteSettings = InferSelectModel<typeof sitesetting> & {
   id: string;
-  siteName: string | null;
+  siteName: string | null | undefined;
   maintenanceMode: boolean;
-  contactEmail: string | null;
-  footerMessage: string | null;
-  updatedAt: Date;
-}
+  contactEmail: string | null | undefined;
+  footerMessage: string | null | undefined;
+  updatedAt: Date | null;
+};
 
-export interface UserDashboardStats {
+export type UserDashboardStats = {
   feedbackSubmitted: number;
   bookmarkedProjects: number;
   bookmarkedNews: number;
   averageRating: number;
-}
+};

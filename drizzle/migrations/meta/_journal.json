@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1752519684660,
+      "tag": "0000_tan_starbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1752524348299,
+      "tag": "0001_burly_ben_urich",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1752580667680,
+      "tag": "0002_goofy_omega_red",
+      "breakpoints": true
+    }
+  ]
+}
