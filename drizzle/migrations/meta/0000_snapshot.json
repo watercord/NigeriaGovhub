@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "dce6bf59-1cdc-4a17-9fcc-a5346b94e7ea",
+  "id": "de5e3735-1899-4426-abd4-05bacd711518",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account": {
@@ -129,8 +129,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
@@ -155,16 +154,7 @@
           "default": "NOW()"
         }
       },
-      "indexes": {
-        "idx_bookmarkednewsarticle_user_news": {
-          "name": "idx_bookmarkednewsarticle_user_news",
-          "columns": [
-            "user_id",
-            "news_article_id"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "bookmarkednewsarticle_id": {
@@ -174,7 +164,15 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "idx_bookmarkednewsarticle_user_news": {
+          "name": "idx_bookmarkednewsarticle_user_news",
+          "columns": [
+            "user_id",
+            "news_article_id"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
     "bookmarkedproject": {
@@ -185,8 +183,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
@@ -322,6 +319,37 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
+    "ministry": {
+      "name": "ministry",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "ministry_id": {
+          "name": "ministry_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "newsarticle": {
       "name": "newsarticle",
       "columns": {
@@ -330,8 +358,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "slug": {
           "name": "slug",
@@ -406,15 +433,7 @@
           "default": "NOW()"
         }
       },
-      "indexes": {
-        "idx_newsarticle_slug": {
-          "name": "idx_newsarticle_slug",
-          "columns": [
-            "slug"
-          ],
-          "isUnique": false
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "newsarticle_id": {
@@ -442,8 +461,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "content": {
           "name": "content",
@@ -456,7 +474,7 @@
           "name": "news_article_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "user_id": {
@@ -483,17 +501,35 @@
           "default": "NOW()"
         }
       },
-      "indexes": {
-        "idx_newscomment_user_news": {
-          "name": "idx_newscomment_user_news",
-          "columns": [
-            "user_id",
+      "indexes": {},
+      "foreignKeys": {
+        "newscomment_user_id_user_id_fk": {
+          "name": "newscomment_user_id_user_id_fk",
+          "tableFrom": "newscomment",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "newscomment_news_article_id_newsarticle_id_fk": {
+          "name": "newscomment_news_article_id_newsarticle_id_fk",
+          "tableFrom": "newscomment",
+          "tableTo": "newsarticle",
+          "columnsFrom": [
             "news_article_id"
           ],
-          "isUnique": false
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
-      "foreignKeys": {},
       "compositePrimaryKeys": {
         "newscomment_id": {
           "name": "newscomment_id",
@@ -513,8 +549,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
@@ -564,6 +599,13 @@
     "passwordResetToken": {
       "name": "passwordResetToken",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "identifier": {
           "name": "identifier",
           "type": "varchar(255)",
@@ -604,7 +646,14 @@
         }
       },
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "passwordResetToken_id": {
+          "name": "passwordResetToken_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -704,14 +753,14 @@
         },
         "budget": {
           "name": "budget",
-          "type": "decimal(15,2)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "expenditure": {
           "name": "expenditure",
-          "type": "decimal(15,2)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -802,8 +851,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "slug": {
           "name": "slug",
@@ -1034,6 +1082,44 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
+    "state": {
+      "name": "state",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "capital": {
+          "name": "capital",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "state_id": {
+          "name": "state_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "tag": {
       "name": "tag",
       "columns": {
@@ -1224,8 +1310,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "title": {
           "name": "title",

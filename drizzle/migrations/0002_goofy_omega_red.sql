@@ -1,1 +1,0 @@
-ALTER TABLE `state` ADD `capital` varchar(255);

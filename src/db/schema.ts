@@ -103,16 +103,16 @@ export const newsarticle = mysqlTable('newsarticle', {
 export const bookmarkednewsarticle = mysqlTable('bookmarkednewsarticle', {
   id: varchar('id', { length: 36 }).primaryKey(),
   user_id: varchar('user_id', { length: 255 }).notNull(),
-  news_article_id: varchar('news_article_id', { length: 36 }).notNull(),
+  news_article_id: varchar('news_article_id', { length: 36 }).notNull() ,
   createdAt: datetime('createdAt').default(sql`NOW()`),
-}, (table) => ({
-  userNewsIdx: unique('idx_bookmarkednewsarticle_user_news').on(table.user_id, table.news_article_id),
-}));
+}, (table) => [
+  unique('idx_bookmarkednewsarticle_user_news').on(table.user_id, table.news_article_id),
+]);
 // Newscomment table
 export const newscomment = mysqlTable('newscomment', {
   id: varchar('id', { length: 36 }).primaryKey(),
   content: text('content').notNull(),
-  news_article_id: varchar('news_article_id', { length: 36 }).notNull(),
+  news_article_id: varchar('news_article_id', { length: 36 }),
   user_id: varchar('user_id', { length: 255 }).notNull(),
   createdAt: datetime('createdAt').default(sql`NOW()`),
   updatedAt: datetime('updatedAt').default(sql`NOW()`),

@@ -1,1 +1,0 @@
-ALTER TABLE `bookmarkedproject` MODIFY COLUMN `id` varchar(36) NOT NULL;

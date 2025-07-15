@@ -16,7 +16,7 @@ CREATE TABLE `account` (
 );
 --> statement-breakpoint
 CREATE TABLE `bookmarkednewsarticle` (
-	`id` varchar(36) NOT NULL DEFAULT UUID(),
+	`id` varchar(36) NOT NULL,
 	`user_id` varchar(255) NOT NULL,
 	`news_article_id` varchar(36) NOT NULL,
 	`createdAt` datetime DEFAULT NOW(),
@@ -25,7 +25,7 @@ CREATE TABLE `bookmarkednewsarticle` (
 );
 --> statement-breakpoint
 CREATE TABLE `bookmarkedproject` (
-	`id` varchar(36) NOT NULL DEFAULT UUID(),
+	`id` varchar(36) NOT NULL,
 	`user_id` varchar(255) NOT NULL,
 	`project_id` varchar(255) NOT NULL,
 	`createdAt` datetime DEFAULT NOW(),
@@ -45,8 +45,14 @@ CREATE TABLE `Feedback` (
 	CONSTRAINT `Feedback_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+CREATE TABLE `ministry` (
+	`id` varchar(255) NOT NULL,
+	`name` varchar(255) NOT NULL,
+	CONSTRAINT `ministry_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `newsarticle` (
-	`id` varchar(36) NOT NULL DEFAULT UUID(),
+	`id` varchar(36) NOT NULL,
 	`slug` varchar(255) NOT NULL,
 	`title` varchar(255) NOT NULL,
 	`summary` text NOT NULL,
@@ -62,9 +68,9 @@ CREATE TABLE `newsarticle` (
 );
 --> statement-breakpoint
 CREATE TABLE `newscomment` (
-	`id` varchar(36) NOT NULL DEFAULT UUID(),
+	`id` varchar(36) NOT NULL,
 	`content` text NOT NULL,
-	`news_article_id` varchar(36) NOT NULL,
+	`news_article_id` varchar(36),
 	`user_id` varchar(255) NOT NULL,
 	`createdAt` datetime DEFAULT NOW(),
 	`updatedAt` datetime DEFAULT NOW(),
@@ -72,7 +78,7 @@ CREATE TABLE `newscomment` (
 );
 --> statement-breakpoint
 CREATE TABLE `newslike` (
-	`id` varchar(36) NOT NULL DEFAULT UUID(),
+	`id` varchar(36) NOT NULL,
 	`user_id` varchar(255) NOT NULL,
 	`news_article_id` varchar(36) NOT NULL,
 	`createdAt` datetime DEFAULT NOW(),
@@ -81,9 +87,11 @@ CREATE TABLE `newslike` (
 );
 --> statement-breakpoint
 CREATE TABLE `passwordResetToken` (
+	`id` varchar(255) NOT NULL,
 	`identifier` varchar(255) NOT NULL,
 	`token` varchar(255) NOT NULL,
 	`expires` datetime NOT NULL,
+	CONSTRAINT `passwordResetToken_id` PRIMARY KEY(`id`),
 	CONSTRAINT `idx_passwordResetToken_identifier_token` UNIQUE(`identifier`,`token`)
 );
 --> statement-breakpoint
@@ -101,8 +109,8 @@ CREATE TABLE `project` (
 	`images` text,
 	`videos` text,
 	`impact_stats` text,
-	`budget` decimal(15,2),
-	`expenditure` decimal(15,2),
+	`budget` varchar(255),
+	`expenditure` varchar(255),
 	`created_at` datetime DEFAULT NOW(),
 	`last_updated_at` datetime DEFAULT NOW(),
 	CONSTRAINT `project_id` PRIMARY KEY(`id`)
@@ -115,7 +123,7 @@ CREATE TABLE `projecttag` (
 );
 --> statement-breakpoint
 CREATE TABLE `service` (
-	`id` varchar(36) NOT NULL DEFAULT UUID(),
+	`id` varchar(36) NOT NULL,
 	`slug` varchar(255) NOT NULL,
 	`title` varchar(255) NOT NULL,
 	`summary` text NOT NULL,
@@ -149,6 +157,13 @@ CREATE TABLE `sitesetting` (
 	CONSTRAINT `sitesetting_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+CREATE TABLE `state` (
+	`id` varchar(255) NOT NULL,
+	`name` varchar(255) NOT NULL,
+	`capital` varchar(255),
+	CONSTRAINT `state_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `tag` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(255) NOT NULL,
@@ -178,7 +193,7 @@ CREATE TABLE `verificationToken` (
 );
 --> statement-breakpoint
 CREATE TABLE `video` (
-	`id` varchar(36) NOT NULL DEFAULT UUID(),
+	`id` varchar(36) NOT NULL,
 	`title` varchar(255) NOT NULL,
 	`url` varchar(255) NOT NULL,
 	`thumbnailUrl` varchar(255),
@@ -189,11 +204,11 @@ CREATE TABLE `video` (
 	CONSTRAINT `video_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
+ALTER TABLE `newscomment` ADD CONSTRAINT `newscomment_user_id_user_id_fk` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `newscomment` ADD CONSTRAINT `newscomment_news_article_id_newsarticle_id_fk` FOREIGN KEY (`news_article_id`) REFERENCES `newsarticle`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX `idx_account_userId` ON `account` (`userId`);--> statement-breakpoint
 CREATE INDEX `idx_feedback_project` ON `Feedback` (`project_id`);--> statement-breakpoint
 CREATE INDEX `idx_feedback_user` ON `Feedback` (`user_id`);--> statement-breakpoint
-CREATE INDEX `idx_newsarticle_slug` ON `newsarticle` (`slug`);--> statement-breakpoint
-CREATE INDEX `idx_newscomment_user_news` ON `newscomment` (`user_id`,`news_article_id`);--> statement-breakpoint
 CREATE INDEX `idx_passwordResetToken_token` ON `passwordResetToken` (`token`);--> statement-breakpoint
 CREATE INDEX `idx_project_ministry` ON `project` (`ministry_id`);--> statement-breakpoint
 CREATE INDEX `idx_project_state` ON `project` (`state_id`);--> statement-breakpoint

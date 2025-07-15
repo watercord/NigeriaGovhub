@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "postinstall": "drizzle-kit migrate && drizzle-kit generate",
+    "postinstall": "drizzle-kit generate",
     "type": "module"
   },
   "dependencies": {
