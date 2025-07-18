@@ -120,10 +120,12 @@ export const newscomment = mysqlTable('newscomment', {
   userFk: foreignKey({
     columns: [table.user_id],
     foreignColumns: [user.id],
+    name: 'newscomment_user_id_user_id_fk',
   }).onDelete('cascade'),
   newsArticleFk: foreignKey({
     columns: [table.news_article_id],
     foreignColumns: [newsarticle.id],
+    name: 'newscomment_news_article_id_fk',
   }).onDelete('cascade'),
 }));
 

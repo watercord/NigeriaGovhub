@@ -1,83 +1,17 @@
+"use server"
+
 import type * as LucideIcons from 'lucide-react';
-import type { Ministry, State, Project, Feedback, ImpactStat, Video, User, NewsArticle, ServiceItem, SiteSettings, UserDashboardStats, NewsComment } from '@/types';
+import type { Ministry, State, Project, Feedback, ImpactStat, Video, User, NewsArticle, ServiceItem, SiteSettings, UserDashboardStats, NewsComment } from '@/types/server';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/drizzle';
 import { user, project, feedback, newsarticle, newscomment, newslike, bookmarkednewsarticle, bookmarkedproject, service, video, sitesetting, projecttag, tag, account, session } from '../db/schema';
 import * as relations from '../db/relations';
 import { eq, and, sql, isNotNull, desc, asc } from 'drizzle-orm';
 import { InferSelectModel } from 'drizzle-orm';
+import { ministries, states } from './mock-data';
 
 // --- Mock Data for Ministries and States ---
-const mockMinistries: Ministry[] = [
-  { id: 'ministry-agriculture', name: 'Federal Ministry of Agriculture and Rural Development' },
-  { id: 'ministry-aviation', name: 'Federal Ministry of Aviation' },
-  { id: 'ministry-budget', name: 'Federal Ministry of Budget and Economic Planning' },
-  { id: 'ministry-commerce', name: 'Federal Ministry of Industry, Trade and Investment' },
-  { id: 'ministry-comms', name: 'Federal Ministry of Communications, Innovation and Digital Economy' },
-  { id: 'ministry-defence', name: 'Federal Ministry of Defence' },
-  { id: 'ministry-education', name: 'Federal Ministry of Education' },
-  { id: 'ministry-environment', name: 'Federal Ministry of Environment' },
-  { id: 'ministry-fct', name: 'Federal Capital Territory Administration' },
-  { id: 'ministry-finance', name: 'Federal Ministry of Finance' },
-  { id: 'ministry-foreign', name: 'Federal Ministry of Foreign Affairs' },
-  { id: 'ministry-health', name: 'Federal Ministry of Health and Social Welfare' },
-  { id: 'ministry-housing', name: 'Federal Ministry of Housing and Urban Development' },
-  { id: 'ministry-humanitarian', name: 'Federal Ministry of Humanitarian Affairs and Poverty Alleviation' },
-  { id: 'ministry-information', name: 'Federal Ministry of Information and National Orientation' },
-  { id: 'ministry-interior', name: 'Federal Ministry of Interior' },
-  { id: 'ministry-justice', name: 'Federal Ministry of Justice' },
-  { id: 'ministry-labour', name: 'Federal Ministry of Labour and Employment' },
-  { id: 'ministry-petroleum', name: 'Federal Ministry of Petroleum Resources' },
-  { id: 'ministry-power', name: 'Federal Ministry of Power' },
-  { id: 'ministry-science', name: 'Federal Ministry of Science, Technology and Innovation' },
-  { id: 'ministry-sports', name: 'Federal Ministry of Sports Development' },
-  { id: 'ministry-tourism', name: 'Federal Ministry of Tourism' },
-  { id: 'ministry-transport', name: 'Federal Ministry of Transportation' },
-  { id: 'ministry-water', name: 'Federal Ministry of Water Resources and Sanitation' },
-  { id: 'ministry-women', name: 'Federal Ministry of Women Affairs' },
-  { id: 'ministry-works', name: 'Federal Ministry of Works' },
-  { id: 'ministry-youth', name: 'Federal Ministry of Youth' },
-];
 
-const mockStates: State[] = [
-  { id: 'state-abia', name: 'Abia', capital: 'Umuahia' },
-  { id: 'state-adamawa', name: 'Adamawa', capital: 'Yola' },
-  { id: 'state-akwa-ibom', name: 'Akwa Ibom', capital: 'Uyo' },
-  { id: 'state-anambra', name: 'Anambra', capital: 'Awka' },
-  { id: 'state-bauchi', name: 'Bauchi', capital: 'Bauchi' },
-  { id: 'state-bayelsa', name: 'Bayelsa', capital: 'Yenagoa' },
-  { id: 'state-benue', name: 'Benue', capital: 'Makurdi' },
-  { id: 'state-borno', name: 'Borno', capital: 'Maiduguri' },
-  { id: 'state-cross-river', name: 'Cross River', capital: 'Calabar' },
-  { id: 'state-delta', name: 'Delta', capital: 'Asaba' },
-  { id: 'state-ebonyi', name: 'Ebonyi', capital: 'Abakaliki' },
-  { id: 'state-edo', name: 'Edo', capital: 'Benin City' },
-  { id: 'state-ekiti', name: 'Ekiti', capital: 'Ado-Ekiti' },
-  { id: 'state-enugu', name: 'Enugu', capital: 'Enugu' },
-  { id: 'state-gombe', name: 'Gombe', capital: 'Gombe' },
-  { id: 'state-imo', name: 'Imo', capital: 'Owerri' },
-  { id: 'state-jigawa', name: 'Jigawa', capital: 'Dutse' },
-  { id: 'state-kaduna', name: 'Kaduna', capital: 'Kaduna' },
-  { id: 'state-kano', name: 'Kano', capital: 'Kano' },
-  { id: 'state-katsina', name: 'Katsina', capital: 'Katsina' },
-  { id: 'state-kebbi', name: 'Kebbi', capital: 'Birnin Kebbi' },
-  { id: 'state-kogi', name: 'Kogi', capital: 'Lokoja' },
-  { id: 'state-kwara', name: 'Kwara', capital: 'Ilorin' },
-  { id: 'state-lagos', name: 'Lagos', capital: 'Ikeja' },
-  { id: 'state-nasarawa', name: 'Nasarawa', capital: 'Lafia' },
-  { id: 'state-niger', name: 'Niger', capital: 'Minna' },
-  { id: 'state-ogun', name: 'Ogun', capital: 'Abeokuta' },
-  { id: 'state-ondo', name: 'Ondo', capital: 'Akure' },
-  { id: 'state-osun', name: 'Osun', capital: 'Osogbo' },
-  { id: 'state-oyo', name: 'Oyo', capital: 'Ibadan' },
-  { id: 'state-plateau', name: 'Plateau', capital: 'Jos' },
-  { id: 'state-rivers', name: 'Rivers', capital: 'Port Harcourt' },
-  { id: 'state-sokoto', name: 'Sokoto', capital: 'Sokoto' },
-  { id: 'state-taraba', name: 'Taraba', capital: 'Jalingo' },
-  { id: 'state-yobe', name: 'Yobe', capital: 'Damaturu' },
-  { id: 'state-zamfara', name: 'Zamfara', capital: 'Gusau' },
-  { id: 'state-fct', name: 'Federal Capital Territory', capital: 'Abuja' },
-];
 
 // --- Helper function to parse JSON fields safely ---
 function safeParseJsonArray<T>(input: string | null | undefined, fallback: T[]): T[] {
@@ -104,7 +38,7 @@ const mapPrismaProjectToAppProject = (
     url: img.url || '',
     alt: img.alt || '',
     dataAiHint: img.dataAiHint,
-  }));
+  })) as { url: string; alt: string; dataAiHint?: string }[];
 
   const videos = safeParseJsonArray<Video>(drizzleProject.videos, []).map((video) => ({
     id: video.id || '',
@@ -120,16 +54,14 @@ const mapPrismaProjectToAppProject = (
   const impactStats = safeParseJsonArray<ImpactStat>(drizzleProject.impact_stats, []).map((stat) => ({
     label: stat.label || '',
     value: stat.value || '',
-    iconName: stat.iconName || undefined,
-    icon: stat.icon || undefined,
   })) as ImpactStat[];
 
   const ministry = drizzleProject.ministry_id
-    ? mockMinistries.find((m) => m.id === drizzleProject.ministry_id) || { id: '', name: 'Unknown Ministry' }
+    ? ministries.find((m) => m.id === drizzleProject.ministry_id) || { id: '', name: 'Unknown Ministry' }
     : { id: '', name: 'Unknown Ministry' };
 
   const state = drizzleProject.state_id
-    ? mockStates.find((s) => s.id === drizzleProject.state_id) || { id: '', name: 'Unknown State', capital: null }
+    ? states.find((s) => s.id === drizzleProject.state_id) || { id: '', name: 'Unknown State', capital: null }
     : { id: '', name: 'Unknown State', capital: null };
 
   return {
@@ -144,10 +76,9 @@ const mapPrismaProjectToAppProject = (
     actualEndDate: drizzleProject.actual_end_date ? new Date(drizzleProject.actual_end_date) : null,
     description: drizzleProject.description,
     images,
-    videos,
     impactStats,
     budget: drizzleProject.budget !== null ? Number(drizzleProject.budget) : null,
-    expenditure: drizzleProject.expenditure !== null ? Number(drizzleProject.expenditure) : null,
+    expenditure: drizzleProject.expenditure !== null ? Number(drizzleProject.expenditure) : undefined,
     lastUpdatedAt: drizzleProject.last_updated_at ? new Date(drizzleProject.last_updated_at) : null,
     tags: drizzleProject.projectTags?.map((pt) => pt.tag.name) || [],
     feedback: drizzleProject.feedback?.map((f) => mapPrismaFeedbackToAppFeedback(f)) || [],
@@ -307,17 +238,20 @@ export type ProjectCreationData = {
 
 export const createProjectInDb = async (projectData: ProjectCreationData): Promise<Project | null> => {
   try {
+    console.log('[createProjectInDb] Starting with data:', projectData);
     // Validate ministry_id and state_id against mock data
-    if (projectData.ministry_id && !mockMinistries.find(m => m.id === projectData.ministry_id)) {
+    if (projectData.ministry_id && !ministries.find(m => m.id === projectData.ministry_id)) {
       throw new Error(`Invalid ministry_id: ${projectData.ministry_id}`);
     }
-    if (projectData.state_id && !mockStates.find(s => s.id === projectData.state_id)) {
+    if (projectData.state_id && !states.find(s => s.id === projectData.state_id)) {
       throw new Error(`Invalid state_id: ${projectData.state_id}`);
     }
 
     const { tags, images, videos, impact_stats, ...scalarData } = projectData;
     const newProjectId = uuidv4();
+    console.log('[createProjectInDb] New project ID:', newProjectId);
     await db.transaction(async (tx) => {
+      console.log('[createProjectInDb] Starting transaction');
       await tx.insert(project).values({
         ...scalarData,
         id: newProjectId,
@@ -331,21 +265,26 @@ export const createProjectInDb = async (projectData: ProjectCreationData): Promi
         videos: videos ? JSON.stringify(videos) : null,
         impact_stats: impact_stats ? JSON.stringify(impact_stats) : null,
       });
+      console.log('[createProjectInDb] Inserted project');
 
       if (tags && tags.length > 0) {
         const uniqueTags = [...new Set(tags)];
+        console.log('[createProjectInDb] Processing tags:', uniqueTags);
         for (const tagName of uniqueTags) {
           let tagRecord = await tx.select().from(tag).where(eq(tag.name, tagName)).limit(1).then(res => res[0]);
           if (!tagRecord) {
             await tx.insert(tag).values({ name: tagName });
             tagRecord = await tx.select().from(tag).where(eq(tag.name, tagName)).limit(1).then(res => res[0]);
+            console.log('[createProjectInDb] Created tag:', tagName);
           }
           await tx.insert(projecttag).values({
             projectId: newProjectId,
             tagId: tagRecord.id,
           });
+          console.log('[createProjectInDb] Linked tag:', tagName);
         }
       }
+      console.log('[createProjectInDb] Transaction completed');
     });
 
     const newProject = await db.query.project.findFirst({
@@ -356,9 +295,10 @@ export const createProjectInDb = async (projectData: ProjectCreationData): Promi
       },
     });
 
+    console.log('[createProjectInDb] Retrieved new project:', newProject);
     return newProject ? mapPrismaProjectToAppProject(newProject) : null;
   } catch (error) {
-    console.error('Error creating project in DB with Drizzle:', error);
+    console.error('[createProjectInDb] Error:', error);
     throw error;
   }
 };
@@ -366,10 +306,10 @@ export const createProjectInDb = async (projectData: ProjectCreationData): Promi
 export const updateProjectInDb = async (id: string, projectData: Partial<ProjectCreationData>): Promise<Project | null> => {
   try {
     // Validate ministry_id and state_id against mock data
-    if (projectData.ministry_id && !mockMinistries.find(m => m.id === projectData.ministry_id)) {
+    if (projectData.ministry_id && !ministries.find(m => m.id === projectData.ministry_id)) {
       throw new Error(`Invalid ministry_id: ${projectData.ministry_id}`);
     }
-    if (projectData.state_id && !mockStates.find(s => s.id === projectData.state_id)) {
+    if (projectData.state_id && !states.find(s => s.id === projectData.state_id)) {
       throw new Error(`Invalid state_id: ${projectData.state_id}`);
     }
 
@@ -735,17 +675,21 @@ export const getServiceById = async (id: string): Promise<ServiceItem | null> =>
 
 export const createServiceInDb = async (serviceData: ServiceCreationData): Promise<ServiceItem | null> => {
   try {
+    console.log('[createServiceInDb] Starting with serviceData:', serviceData);
     const newServiceId = uuidv4();
+    console.log('[createServiceInDb] New service ID:', newServiceId);
     await db.insert(service).values({
       id: newServiceId,
       ...serviceData,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    console.log('[createServiceInDb] Inserted service');
     const newService = await db.select().from(service).where(eq(service.id, newServiceId)).limit(1).then(res => res[0]);
+    console.log('[createServiceInDb] Retrieved new service:', newService);
     return newService ? mapPrismaServiceToAppServiceItem(newService) : null;
   } catch (error) {
-    console.error('Error creating service in DB with Drizzle:', error);
+    console.error('[createServiceInDb] Error:', error);
     throw error;
   }
 };
@@ -1172,9 +1116,11 @@ export const toggleNewsLikeInDb = async (userId: string, articleId: string): Pro
 };
 
 // --- News Comment Functions ---
-export const addNewsCommentInDb = async (userId: string, articleId: string, content: string): Promise<NewsComment | null> => {
+export const addNewsCommentInDb = async (articleId: string, userId: string, content: string) => {
   try {
+    console.log('[addNewsCommentInDb] Starting with articleId:', articleId, 'userId:', userId, 'content:', content);
     const newCommentId = uuidv4();
+    console.log('[addNewsCommentInDb] New comment ID:', newCommentId);
     await db.insert(newscomment).values({
       id: newCommentId,
       user_id: userId,
@@ -1183,19 +1129,33 @@ export const addNewsCommentInDb = async (userId: string, articleId: string, cont
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    const [newComment] = await db.select().from(newscomment).where(eq(newscomment.id, newCommentId)).limit(1);
-    const [userRecord] = await db.select({ id: user.id, name: user.name, image: user.image })
-      .from(user)
-      .where(eq(user.id, userId))
-      .limit(1);
-    return {
-      id: newComment.id,
-      content: newComment.content,
-      createdAt: newComment.createdAt ? new Date(newComment.createdAt) : null,
-      user: userRecord ? { id: userRecord.id, name: userRecord.name, image: userRecord.image } : { id: userId, name: 'Anonymous', image: null },
-    };
+    console.log('[addNewsCommentInDb] Inserted comment');
+    const newComment = await db
+      .select({
+        id: newscomment.id,
+        content: newscomment.content,
+        createdAt: newscomment.createdAt,
+        user: {
+          id: user.id,
+          name: user.name,
+          image: user.image,
+        },
+      })
+      .from(newscomment)
+      .leftJoin(user, eq(newscomment.user_id, user.id))
+      .where(eq(newscomment.id, newCommentId))
+      .then(res => res[0]);
+    console.log('[addNewsCommentInDb] Retrieved comment:', newComment);
+    return newComment
+      ? {
+          id: newComment.id,
+          content: newComment.content,
+          createdAt: newComment.createdAt,
+          user: newComment.user || { id: '', name: 'Anonymous', image: null },
+        }
+      : null;
   } catch (error) {
-    console.error('Error adding news comment with Drizzle:', error);
+    console.error('[addNewsCommentInDb] Error:', error);
     throw error;
   }
 };
@@ -1212,12 +1172,12 @@ export const deleteNewsCommentFromDb = async (commentId: string): Promise<boolea
 
 // --- Helper functions to access mock data ---
 export const getAllStates = async (): Promise<State[]> => {
-  return mockStates;
+  return states;
 };
 
 export const getAllMinistries = async (): Promise<Ministry[]> => {
-  return mockMinistries;
+  return ministries;
 };
 
-export const ministries = mockMinistries;
-export const states = mockStates;
+// export const ministries = mockMinistries;
+// export const states = mockStates;

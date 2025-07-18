@@ -11,10 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { addVideo, updateVideo } from "@/lib/actions";
 import { useRouter } from "next/navigation";
-import { videoFormSchemaRaw, type Video, type VideoFormData } from "@/types";
+import { type VideoFormData } from "@/types/client";
+import { videoFormSchemaRaw, type Video } from "@/types/server"
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardDescription } from "@/components/ui/card";
+
 
 const videoSchema = z.object({
   title: videoFormSchemaRaw.title(z),

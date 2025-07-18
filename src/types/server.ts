@@ -1,7 +1,17 @@
-import type * as LucideIcons from 'lucide-react';
+// src/types/server.ts
 import type { InferSelectModel } from 'drizzle-orm';
-import type { project, newsarticle, service, video, sitesetting, user, feedback, tag, ministry, state } from '../db/schema';
-import type { ComponentType } from 'react';
+import type {
+  project,
+  newsarticle,
+  service,
+  video,
+  sitesetting,
+  user,
+  feedback,
+  tag,
+  ministry,
+  state,
+} from '../db/schema';
 
 export type Ministry = InferSelectModel<typeof ministry> & {
   id: string;
@@ -11,10 +21,9 @@ export type Ministry = InferSelectModel<typeof ministry> & {
 export type State = InferSelectModel<typeof state> & {
   id: string;
   name: string;
-  capital?: string | null; // Added to match db/schema.ts
+  capital?: string | null;
 };
 
-// src/types/index.ts
 export type Feedback = InferSelectModel<typeof feedback> & {
   id: string;
   project_id: string;
@@ -24,15 +33,8 @@ export type Feedback = InferSelectModel<typeof feedback> & {
   rating: number | null;
   sentiment_summary: string | null;
   created_at: Date | null;
-  user?: User | null; // Allow null
+  user?: User | null;
 };
-
-export interface ImpactStat {
-  label: string;
-  value: string;
-  iconName?: keyof typeof LucideIcons;
-  icon?: ComponentType<any>;
-}
 
 export type Video = InferSelectModel<typeof video> & {
   id: string;
@@ -44,6 +46,15 @@ export type Video = InferSelectModel<typeof video> & {
   createdAt: Date | null;
   updatedAt: Date | null;
 };
+
+export const videoFormSchemaRaw = {
+  title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(200),
+  url: (z: any) => z.string().url("Must be a valid URL (e.g., from Cloudinary or YouTube embed)."),
+  thumbnailUrl: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
+  dataAiHint: (z: any) => z.string().max(50, "AI hint for thumbnail too long (max 2 words).").optional().nullable(),
+  description: (z: any) => z.string().max(500, "Description too long.").optional().nullable(),
+};
+
 
 export type Tag = InferSelectModel<typeof tag> & {
   id: number;
@@ -63,15 +74,53 @@ export type Project = InferSelectModel<typeof project> & {
   description: string;
   images: { url: string; alt: string; dataAiHint?: string }[];
   videos?: Video[];
-  impactStats: ImpactStat[];
+  impactStats: ImpactStat[]; // only label/value
   budget: number | null;
   expenditure: number | null;
   tags: string[];
-  lastUpdatedAt: Date | null; // Changed to Date | null to match db/schema.ts
+  lastUpdatedAt: Date | null;
   feedback: Feedback[];
   ministry_id: string | null;
   state_id: string | null;
 };
+
+export const projectFormSchemaRaw = {
+  title: (z: typeof import('zod')) =>
+    z.string().min(1, 'Title is required').max(255, 'Title must be 255 characters or less'),
+  subtitle: (z: typeof import('zod')) =>
+    z.string().max(255, 'Subtitle must be 255 characters or less').optional(),
+  ministryId: (z: typeof import('zod')) =>
+    z.string().optional(),
+  stateId: (z: typeof import('zod')) =>
+    z.string().optional(),
+  status: (z: typeof import('zod')) =>
+    z.enum(['Planned', 'Ongoing', 'Completed', 'On Hold']),
+  startDate: (z: typeof import('zod')) =>
+    z.date({ required_error: 'Start date is required' }),
+  expectedEndDate: (z: typeof import('zod')) =>
+    z.date().nullable(),
+  description: (z: typeof import('zod')) =>
+    z.string().min(1, 'Description is required'),
+  budget: (z: typeof import('zod')) =>
+    z.number().positive('Budget must be positive').nullable(),
+  expenditure: (z: typeof import('zod')) =>
+    z.number().positive('Expenditure must be positive').nullable(),
+  tags: (z: typeof import('zod')) =>
+    z.string().optional(),
+  images: (z: typeof import('zod')) =>
+    z
+      .array(
+        z.object({
+          url: z.string().url('Invalid URL'),
+          alt: z.string().min(1, 'Alt text is required'),
+          dataAiHint: z.string().optional(),
+        })
+      )
+      .optional(),
+};
+
+
+
 export type User = InferSelectModel<typeof user> & {
   id: string;
   name: string | null;
@@ -80,8 +129,8 @@ export type User = InferSelectModel<typeof user> & {
   image: string | null;
   role: 'user' | 'admin' | null;
   created_at: Date | null;
-  password: string | null; // Add password
-  updated_at: Date | null; // Add updated_at
+  password: string | null;
+  updated_at: Date | null;
 };
 
 export interface NewsComment {
@@ -93,7 +142,7 @@ export interface NewsComment {
     name: string | null;
     image: string | null;
   };
-};
+}
 
 export type NewsArticle = InferSelectModel<typeof newsarticle> & {
   id: string;
@@ -112,55 +161,6 @@ export type NewsArticle = InferSelectModel<typeof newsarticle> & {
   isLikedByUser: boolean;
 };
 
-export type ServiceItem = InferSelectModel<typeof service> & {
-  id: string;
-  slug: string;
-  title: string;
-  summary: string;
-  iconName: keyof typeof LucideIcons | null;
-  icon?: ComponentType<any>;
-  link: string | null;
-  category: string;
-  imageUrl: string | null;
-  dataAiHint: string | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-};
-
-export const projectFormSchemaRaw = {
-  title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(150),
-  subtitle: (z: any) => z.string().min(10, "Subtitle must be at least 10 characters.").max(250),
-  ministryId: (z: any) => z.string().min(1, "Ministry is required."),
-  stateId: (z: any) => z.string().min(1, "State is required."),
-  status: (z: any) => z.enum(['Planned', 'Ongoing', 'Completed', 'On Hold']),
-  startDate: (z: any) => z.coerce.date({ required_error: "Start date is required." }),
-  expectedEndDate: (z: any) => z.coerce.date().optional().nullable(),
-  description: (z: any) => z.string().min(20, "Description must be at least 20 characters."),
-  budget: (z: any) => z.preprocess(
-    (val: any) => (val === "" || val === null || val === undefined) ? null : Number(val),
-    z.number().positive("Budget must be a positive number.").optional().nullable()
-  ),
-  expenditure: (z: any) => z.preprocess(
-    (val: any) => (val === "" || val === null || val === undefined) ? null : Number(val),
-    z.number().positive("Expenditure must be a positive number.").optional().nullable()
-  ),
-  tags: (z: any) => z.string().optional(),
-};
-
-export type ProjectFormData = {
-  title: string;
-  subtitle: string;
-  ministryId: string;
-  stateId: string;
-  status: 'Planned' | 'Ongoing' | 'Completed' | 'On Hold';
-  startDate: Date;
-  expectedEndDate?: Date | null;
-  description: string;
-  budget?: number | null;
-  expenditure?: number | null;
-  tags?: string;
-};
-
 export const newsArticleFormSchemaRaw = {
   title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(200),
   slug: (z: any) => z.string().min(3, "Slug must be at least 3 characters.").max(200)
@@ -175,15 +175,20 @@ export const newsArticleFormSchemaRaw = {
   dataAiHint: (z: any) => z.string().max(50, "AI hint too long.").optional().nullable(),
 };
 
-export type NewsArticleFormData = {
-  title: string;
+
+
+// ⚠️ iconName/icon removed
+export type ServiceItem = InferSelectModel<typeof service> & {
+  id: string;
   slug: string;
+  title: string;
   summary: string;
   category: string;
-  publishedDate: Date;
-  content: string;
-  imageUrl?: string | null;
-  dataAiHint?: string | null;
+  link: string | null;
+  imageUrl: string | null;
+  dataAiHint: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
 };
 
 export const serviceFormSchemaRaw = {
@@ -198,32 +203,12 @@ export const serviceFormSchemaRaw = {
   iconName: (z: any) => z.string().max(50, "Icon name too long.").optional().nullable(),
 };
 
-export type ServiceFormData = {
-  title: string;
-  slug: string;
-  summary: string;
-  category: string;
-  link?: string | null;
-  imageUrl?: string | null;
-  dataAiHint?: string | null;
-  iconName?: keyof typeof LucideIcons | null;
-};
 
-export const videoFormSchemaRaw = {
-  title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(200),
-  url: (z: any) => z.string().url("Must be a valid URL (e.g., from Cloudinary or YouTube embed)."),
-  thumbnailUrl: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
-  dataAiHint: (z: any) => z.string().max(50, "AI hint for thumbnail too long (max 2 words).").optional().nullable(),
-  description: (z: any) => z.string().max(500, "Description too long.").optional().nullable(),
-};
-
-export type VideoFormData = {
-  title: string;
-  url: string;
-  thumbnailUrl?: string | null;
-  dataAiHint?: string | null;
-  description?: string | null;
-};
+export interface ImpactStat {
+  label: string;
+  value: string;
+  
+}
 
 export type SiteSettings = InferSelectModel<typeof sitesetting> & {
   id: string;

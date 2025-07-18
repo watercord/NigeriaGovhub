@@ -11,9 +11,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { getNewsArticleByIdAction } from "@/lib/actions";
-import type { NewsArticle } from "@/types";
+import type { NewsArticle } from "@/types/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// export const dynamic = 'force-dynamic'
 export default function EditNewsArticlePage() {
   const { data: session, status } = useSession();
   const router = useRouter();

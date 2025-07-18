@@ -15,7 +15,7 @@ import * as z from "zod";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { fetchSiteSettingsAction, updateSiteSettingsAction } from "@/lib/actions";
-import type { SiteSettings } from "@/types";
+import type { SiteSettings } from "@/types/client";
 import { Loader2 } from "lucide-react";
 
 const settingsSchema = z.object({

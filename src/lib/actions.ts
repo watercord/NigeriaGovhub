@@ -1,4 +1,5 @@
 "use server";
+
 import 'dotenv/config';
 import { revalidatePath } from 'next/cache';
 import { summarizeFeedbackSentiment, type SummarizeFeedbackSentimentInput } from '@/ai/flows/summarize-feedback-sentiment';
@@ -6,8 +7,9 @@ import {
   addFeedbackToProject as saveFeedbackToDb,
   deleteUserById as removeUserFromDb,
   getUserProfileFromDb,
-  createProjectInDb as saveProjectToDb,
+  createProjectInDb,
   updateProjectInDb,
+
   deleteProjectFromDb,
   getAllProjects as fetchAllProjectsFromDb,
   getAllNewsArticles as fetchAllNewsArticlesFromDb,
@@ -43,27 +45,35 @@ import {
   addNewsCommentInDb,
   toggleNewsLikeInDb,
   getUserByEmail,
-  getFullUserByEmail,
+  // getFullUserByEmail,
 } from './data';
 import { db } from '../db/drizzle';
+import { cloudinary } from './cloudinary';  
 import { user, project, newsarticle, service, video, verificationToken, passwordResetToken, feedback, ministry, state } from '../db/schema';
-import type { Feedback as AppFeedback, User as AppUser, Project as AppProject, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, Video as AppVideo, NewsArticleFormData, ProjectFormData, ServiceFormData, VideoFormData, SiteSettings, UserDashboardStats } from '@/types';
+import type { Feedback as AppFeedback, User as AppUser, Project as AppProject, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, Video as AppVideo,  SiteSettings, UserDashboardStats, Project } from '@/types/server';
+import type { SubmitFeedbackResult, DeleteUserResult, CreateUserResult } from '@/types/actions';
+import type {
+  NewsArticleFormData,
+  ProjectFormData,
+  ServiceFormData,
+  VideoFormData,
+} from '@/types/client';
 import type { SiteSettingsFormData } from '@/app/dashboard/admin/site-settings/page';
 import { eq, and, ne, sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
 import { createHash } from 'crypto';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions, getFullUserByEmail } from './auth';
 import { createVerificationToken, getVerificationTokenByToken } from './verification-token';
 import { sendVerificationEmail, sendPasswordResetEmail } from './mail';
 import { createPasswordResetToken, getPasswordResetTokenByToken } from './password-reset-token';
 
-export interface SubmitFeedbackResult {
-  success: boolean;
-  message: string;
-  feedback?: AppFeedback;
-  sentimentSummary?: string;
-}
+// export interface SubmitFeedbackResult {
+//   success: boolean;
+//   message: string;
+//   feedback?: AppFeedback;
+//   sentimentSummary?: string;
+// }
 
 export async function submitProjectFeedback(
   projectId: string,
@@ -110,10 +120,10 @@ export async function submitProjectFeedback(
   }
 }
 
-export interface DeleteUserResult {
-  success: boolean;
-  message: string;
-}
+// export interface DeleteUserResult {
+//   success: boolean;
+//   message: string;
+// }
 
 export async function deleteUser(userId: string): Promise<DeleteUserResult> {
   try {
@@ -153,87 +163,120 @@ interface ActionResult<T = null> {
   errorDetails?: string;
 }
 
-export async function addProject(
-  formData: ProjectFormData
-): Promise<ActionResult<AppProject>> {
+export async function uploadImagesToCloudinary(formData: FormData): Promise<{
+  success: boolean;
+  images?: { url: string }[];
+  message?: string;
+}> {
   try {
-    const dataToSave: ProjectCreationData = {
-      title: formData.title,
-      subtitle: formData.subtitle,
-      ministry_id: formData.ministryId,
-      state_id: formData.stateId,
-      status: formData.status,
+    const files = formData.getAll('images') as File[];
+    if (!files || files.length === 0) {
+      return { success: false, message: 'No files provided' };
+    }
+
+    const uploadPromises = files.map(async (file) => {
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      return new Promise<{ url: string }>((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          {
+            folder: 'nigeriagov/projects',
+            resource_type: 'image',
+          },
+          (error, result) => {
+            if (error || !result) {
+              console.error('[uploadImagesToCloudinary] Upload error:', error);
+              reject(error);
+            } else {
+              resolve({ url: result.secure_url });
+            }
+          }
+        ).end(buffer);
+      });
+    });
+
+    const results = await Promise.all(uploadPromises);
+    return { success: true, images: results };
+  } catch (error) {
+    console.error('[uploadImagesToCloudinary] Error:', error);
+    return { success: false, message: 'Failed to upload images to Cloudinary' };
+  }
+}
+
+export async function addProject(formData: ProjectFormData): Promise<{
+  success: boolean;
+  message: string;
+  project?: Project;
+  errorDetails?: any;
+}> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== 'admin') {
+      return { success: false, message: 'Unauthorized: Admin access required' };
+    }
+
+    const projectData = {
+      ...formData,
+      ministry_id: formData.ministryId || null,
+      state_id: formData.stateId || null,
       start_date: formData.startDate,
-      expected_end_date: formData.expectedEndDate ?? null,
-      description: formData.description,
-      budget: formData.budget ? Number(formData.budget) : null,
-      expenditure: formData.expenditure ? Number(formData.expenditure) : null,
-      tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
+      expected_end_date: formData.expectedEndDate,
+      tags: formData.tags ? formData.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== '') : [],
+      images: formData.images || [],
     };
 
-    const newProject = await saveProjectToDb(dataToSave);
+    const newProject = await createProjectInDb(projectData);
     if (!newProject) {
-      return { success: false, message: 'Failed to save project to the database.' };
+      return { success: false, message: 'Failed to create project' };
     }
 
-    revalidatePath('/projects');
     revalidatePath('/dashboard/admin/manage-projects');
-    revalidatePath('/');
-    return { success: true, message: 'Project added successfully!', item: newProject };
+    return { success: true, message: 'Project created successfully', project: newProject };
   } catch (error) {
-    console.error('Error adding project:', error);
-    let errorMessage = 'An unexpected error occurred while adding the project.';
-    if (error instanceof Error) {
-      errorMessage = error.message;
-      if (error.message.includes('Duplicate entry') && error.message.includes('title')) {
-        errorMessage = 'A project with this title already exists.';
-      }
-    }
-    return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
+    console.error('[addProject] Error:', error);
+    return { success: false, message: 'An error occurred while creating the project', errorDetails: error };
   }
 }
 
 export async function updateProject(
-  id: string,
-  formData: ProjectFormData
-): Promise<ActionResult<AppProject>> {
+  projectId: string,
+  formData: Partial<ProjectFormData>
+): Promise<{
+  success: boolean;
+  message: string;
+  project?: Project;
+  errorDetails?: any;
+}> {
   try {
-    const dataToUpdate: Partial<ProjectCreationData> = {
-      title: formData.title,
-      subtitle: formData.subtitle,
-      ministry_id: formData.ministryId,
-      state_id: formData.stateId,
-      status: formData.status,
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== 'admin') {
+      return { success: false, message: 'Unauthorized: Admin access required' };
+    }
+
+    const projectData = {
+      ...formData,
+      ministry_id: formData.ministryId || null,
+      state_id: formData.stateId || null,
       start_date: formData.startDate,
       expected_end_date: formData.expectedEndDate,
-      description: formData.description,
-      budget: formData.budget !== undefined && formData.budget !== null ? Number(formData.budget) : null,
-      expenditure: formData.expenditure !== undefined && formData.expenditure !== null ? Number(formData.expenditure) : null,
-      tags: formData.tags?.split(',').map(tag => tag.trim()).filter(tag => tag) || [],
+      tags: formData.tags ? formData.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag !== '') : undefined,
+      images: formData.images,
     };
 
-    const updatedProject = await updateProjectInDb(id, dataToUpdate);
+    const updatedProject = await updateProjectInDb(projectId, projectData);
     if (!updatedProject) {
-      return { success: false, message: 'Failed to update project in the database.' };
+      return { success: false, message: 'Failed to update project' };
     }
 
-    revalidatePath('/projects');
-    revalidatePath(`/projects/${id}`);
     revalidatePath('/dashboard/admin/manage-projects');
-    revalidatePath('/');
-    return { success: true, message: 'Project updated successfully!', item: updatedProject };
+    return { success: true, message: 'Project updated successfully', project: updatedProject };
   } catch (error) {
-    console.error('Error updating project:', error);
-    let errorMessage = 'An unexpected error occurred while updating the project.';
-    if (error instanceof Error) {
-      errorMessage = error.message;
-      if (error.message.includes('Duplicate entry') && error.message.includes('title')) {
-        errorMessage = 'A project with this title already exists.';
-      }
-    }
-    return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
+    console.error('[updateProject] Error:', error);
+    return { success: false, message: 'An error occurred while updating the project', errorDetails: error };
   }
 }
+
 
 export async function deleteProject(id: string): Promise<ActionResult> {
   try {
@@ -343,13 +386,12 @@ export async function getProjectByIdAction(id: string): Promise<AppProject | nul
             updatedAt: new Date(video.updatedAt),
           }))
         : undefined,
-     budget: projectData.project.budget !== undefined && projectData.project.budget !== null
-  ? Number(projectData.project.budget)
-  : null,
-
-  expenditure: projectData.project.expenditure !== undefined && projectData.project.expenditure !== null
-  ? Number(projectData.project.expenditure)
-  : null,
+      budget: projectData.project.budget !== undefined && projectData.project.budget !== null
+        ? Number(projectData.project.budget)
+        : null,
+      expenditure: projectData.project.expenditure !== undefined && projectData.project.expenditure !== null
+        ? Number(projectData.project.expenditure)
+        : null,
       feedback: feedbackResults.map(f => ({
   ...f,
   created_at: f.created_at ? new Date(f.created_at) : null,
@@ -482,11 +524,20 @@ export async function addService(
   serviceData: ServiceFormData
 ): Promise<ActionResult<AppServiceItem>> {
   try {
+    console.log('[addService] Starting with serviceData:', serviceData);
+    const session = await getServerSession(authOptions);
+    console.log('[addService] Session:', session);
+    if (!session?.user || session.user.role !== 'admin') {
+      return { success: false, message: 'Unauthorized: Admin access required' };
+    }
+
+    console.log('[addService] Checking for existing service with slug:', serviceData.slug);
     const existingService = await db
       .select()
       .from(service)
       .where(eq(service.slug, serviceData.slug))
       .limit(1);
+    console.log('[addService] Existing service:', existingService);
 
     if (existingService.length > 0) {
       return { success: false, message: `A service with the slug "${serviceData.slug}" already exists.` };
@@ -502,8 +553,10 @@ export async function addService(
       dataAiHint: serviceData.dataAiHint ?? null,
       iconName: serviceData.iconName ?? null,
     };
+    console.log('[addService] Prepared data to save:', dataToSave);
 
     const newService = await saveServiceToDb(dataToSave);
+    console.log('[addService] New service:', newService);
     if (!newService) {
       return { success: false, message: 'Failed to save service to the database.' };
     }
@@ -514,7 +567,7 @@ export async function addService(
     revalidatePath('/');
     return { success: true, message: 'Service added successfully!', item: newService };
   } catch (error) {
-    console.error('Error adding service:', error);
+    console.error('[addService] Error:', error);
     let errorMessage = 'An unexpected error occurred while adding the service.';
     if (error instanceof Error) {
       errorMessage = error.message;
@@ -744,10 +797,10 @@ export async function updateSiteSettingsAction(
   }
 }
 
-export interface CreateUserResult {
-  success: boolean;
-  message: string;
-}
+// export interface CreateUserResult {
+//   success: boolean;
+//   message: string;
+// }
 
 export async function createUserAction(data: { name: string; email: string; password?: string }): Promise<CreateUserResult> {
   try {
@@ -883,14 +936,20 @@ export async function fetchAllFeedbackWithProjectTitlesAction(): Promise<Array<A
 }
 
 export async function getUserDashboardStatsAction(): Promise<UserDashboardStats> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    throw new Error("User not authenticated");
-  }
   try {
-    return await getUserDashboardStatsFromDb(session.user.id);
+    console.log('[getUserDashboardStatsAction] Starting');
+    const session = await getServerSession(authOptions);
+    console.log('[getUserDashboardStatsAction] Session:', session);
+
+    if (!session?.user?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    const stats = await getUserDashboardStatsFromDb(session.user.id);
+    console.log('[getUserDashboardStatsAction] Stats:', stats);
+    return stats;
   } catch (error) {
-    console.error("Error getting user dashboard stats:", error);
+    console.error('[getUserDashboardStatsAction] Error:', error);
     return {
       feedbackSubmitted: 0,
       bookmarkedProjects: 0,
@@ -901,6 +960,7 @@ export async function getUserDashboardStatsAction(): Promise<UserDashboardStats>
 }
 
 export async function getUserFeedbackAction(): Promise<Array<AppFeedback & { projectTitle: string; projectId: string }>> {
+  // const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     throw new Error("User not authenticated");
@@ -933,8 +993,12 @@ export async function updateUserNameAction(newName: string): Promise<{ success: 
   }
 }
 
+const getServerAuthSession = async () => {
+  return await getServerSession(authOptions);
+}
+
 export async function getUserBookmarkedNewsAction(): Promise<AppNewsArticle[]> {
-  const session = await getServerSession(authOptions);
+  const session = await getServerAuthSession();
   if (!session?.user?.id) {
     throw new Error("User not authenticated");
   }
@@ -947,6 +1011,7 @@ export async function getUserBookmarkedNewsAction(): Promise<AppNewsArticle[]> {
 }
 
 export async function checkNewsBookmarkStatusAction(articleId: string): Promise<boolean> {
+  // const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return false;
@@ -955,6 +1020,7 @@ export async function checkNewsBookmarkStatusAction(articleId: string): Promise<
 }
 
 export async function toggleNewsBookmarkAction(articleId: string): Promise<{ success: boolean; message: string }> {
+  // const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return { success: false, message: "You must be logged in to bookmark articles." };
@@ -980,32 +1046,53 @@ export async function toggleNewsBookmarkAction(articleId: string): Promise<{ suc
   }
 }
 
-export async function addNewsCommentAction(articleId: string, content: string): Promise<{ success: boolean; message: string }> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, message: "You must be logged in to comment." };
-  }
-
-  if (!content || content.trim().length < 3) {
-    return { success: false, message: "Comment must be at least 3 characters long." };
-  }
-
+export async function addNewsCommentAction({ articleId, content }: { articleId: string; content: string }) {
   try {
-    await addNewsCommentInDb(articleId, session.user.id, content);
+    console.log('[addNewsCommentAction] Starting with articleId:', articleId, 'content:', content);
+    const session = await getServerSession(authOptions);
+    console.log('[addNewsCommentAction] Session:', session);
 
-    const [article] = await db.select({ slug: newsarticle.slug }).from(newsarticle).where(eq(newsarticle.id, articleId));
-    if (article) {
-      revalidatePath(`/news/${article.slug}`);
+    if (!session?.user?.id) {
+      return { success: false, message: 'Unauthorized: You must be logged in to comment' };
     }
 
-    return { success: true, message: "Comment added." };
+    // Verify the user exists in the database
+    const userResult = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
+    console.log('[addNewsCommentAction] User lookup:', user);
+    if (userResult.length === 0) {
+      return { success: false, message: 'User not found. Please sign in again.' };
+    }
+
+    // Verify the article exists
+    const article = await db.select().from(newsarticle).where(eq(newsarticle.id, articleId)).limit(1);
+    console.log('[addNewsCommentAction] Article lookup:', article);
+    if (article.length === 0) {
+      return { success: false, message: 'News article not found.' };
+    }
+
+    const newComment = await addNewsCommentInDb(articleId, session.user.id, content);
+    console.log('[addNewsCommentAction] New comment:', newComment);
+    if (!newComment) {
+      return { success: false, message: 'Failed to add comment' };
+    }
+
+    revalidatePath(`/news/${articleId}`);
+    return { success: true, message: 'Comment added successfully', item: newComment };
   } catch (error) {
-    console.error("Error adding news comment:", error);
-    return { success: false, message: "An unexpected error occurred." };
+    console.error('[addNewsCommentAction] Error:', error);
+    let errorMessage = 'Error adding comment: An unexpected error occurred.';
+    if (error instanceof Error) {
+      errorMessage = `Error adding comment: ${error.message}`;
+      if (error.message.includes('foreign key constraint fails')) {
+        errorMessage = 'Invalid user or article ID. Please try signing in again or verify the article exists.';
+      }
+    }
+    return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
   }
 }
 
 export async function toggleNewsLikeAction(articleId: string): Promise<{ success: boolean; message: string }> {
+  // const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return { success: false, message: "You must be logged in to like articles." };
@@ -1034,6 +1121,9 @@ export async function resetAction(email: string): Promise<{ success?: string; er
   }
 
   const passwordResetToken = await createPasswordResetToken(email);
+  if (!passwordResetToken) {
+    return { error: "Failed to create password reset token." };
+  }
   await sendPasswordResetEmail(passwordResetToken.identifier, passwordResetToken.token);
 
   return { success: "Password reset email sent!" };

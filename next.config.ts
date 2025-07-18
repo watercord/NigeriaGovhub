@@ -1,9 +1,19 @@
 import type { NextConfig } from 'next';
-
+const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
 const nextConfig: NextConfig = {
+  
   output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        events: false,
+      };
+    }
+    return config;
   },
   eslint: {
     ignoreDuringBuilds: true,

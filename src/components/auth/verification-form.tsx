@@ -1,9 +1,7 @@
-
 "use client";
 
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { newVerificationAction } from "@/lib/actions";
 import { Card, CardHeader, CardContent, CardFooter, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
@@ -25,15 +23,22 @@ export const VerificationForm = () => {
       return;
     }
 
-    newVerificationAction(token)
-      .then((data) => {
-        setSuccess(data.success);
-        setError(data.error);
+    fetch("/api/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    })
+      .then(async (res) => {
+        const result = await res.json();
+        if (res.ok) {
+          setSuccess(result.success);
+        } else {
+          setError(result.error || "Verification failed.");
+        }
       })
       .catch(() => {
         setError("Something went wrong!");
       });
-
   }, [token, success, error]);
 
   useEffect(() => {
@@ -42,39 +47,36 @@ export const VerificationForm = () => {
 
   return (
     <div className="flex items-center justify-center w-full">
-        <Card className="w-[400px] shadow-md">
-            <CardHeader className="text-center">
-                <CardTitle className="font-headline text-2xl">Confirming your verification</CardTitle>
-                <CardDescription>Please wait while we verify your email.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-center min-h-[100px]">
-                {!success && !error && (
-                    <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                )}
-                {success && (
-                    <div className="flex flex-col items-center gap-2 text-emerald-600">
-                        <CheckCircle className="h-8 w-8" />
-                        <p>{success}</p>
-                    </div>
-                )}
-                {error && (
-                     <div className="flex flex-col items-center gap-2 text-destructive">
-                        <XCircle className="h-8 w-8" />
-                        <p>{error}</p>
-                    </div>
-                )}
-            </CardContent>
-            <CardFooter>
-                 <Button variant="link" className="w-full" asChild>
-                    <Link href="/login">
-                        Back to login
-                    </Link>
-                 </Button>
-            </CardFooter>
-        </Card>
+      <Card className="w-[400px] shadow-md">
+        <CardHeader className="text-center">
+          <CardTitle className="font-headline text-2xl">Confirming your verification</CardTitle>
+          <CardDescription>Please wait while we verify your email.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center min-h-[100px]">
+          {!success && !error && <Loader2 className="h-8 w-8 text-primary animate-spin" />}
+          {success && (
+            <div className="flex flex-col items-center gap-2 text-emerald-600">
+              <CheckCircle className="h-8 w-8" />
+              <p>{success}</p>
+            </div>
+          )}
+          {error && (
+            <div className="flex flex-col items-center gap-2 text-destructive">
+              <XCircle className="h-8 w-8" />
+              <p>{error}</p>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button variant="link" className="w-full" asChild>
+            <Link href="/login">Back to login</Link>
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
+
 export const VerificationFormSkeleton = () => {
     return (
         <Card className="w-[400px] shadow-md">

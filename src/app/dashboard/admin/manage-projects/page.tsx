@@ -19,12 +19,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
-import type { Project } from "@/types";
+import type { Project } from "@/types/server";
 import { useRouter, usePathname } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { deleteProject, fetchAllProjectsAction } from "@/lib/actions"; // Use Server Action
 
+// export const dynamic = 'force-dynamic'
 export default function ManageProjectsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();

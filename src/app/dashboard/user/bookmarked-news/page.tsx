@@ -4,13 +4,14 @@
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NewsCard } from "@/components/news/news-card";
-import type { NewsArticle } from "@/types";
+import type { NewsArticle } from "@/types/server";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Loader2, Bookmark, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getUserBookmarkedNewsAction } from "@/lib/actions";
+
 
 export default function MyBookmarkedNewsPage() {
   const { data: session, status } = useSession();

@@ -19,12 +19,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
-import type { ServiceItem } from "@/types";
+import type { ServiceItem } from "@/types/client";
 import { useRouter, usePathname } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { deleteService, fetchAllServicesAction } from "@/lib/actions"; // Use Server Action
 
+// export const dynamic = 'force-dynamic'
 export default function ManageServicesPage() {
   const { data: session, status } = useSession();
   const router = useRouter();

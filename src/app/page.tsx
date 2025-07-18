@@ -11,13 +11,13 @@ import { getAllNewsArticles, getAllServices, getAllProjects, getAllVideosFromDb 
 import { NewsCard } from "@/components/news/news-card";
 import { ServiceCard } from "@/components/services/service-card";
 import { VideoCard } from "@/components/common/video-card";
-import type { Project, NewsArticle, ServiceItem, Video } from "@/types";
+import type { Project, NewsArticle, ServiceItem, Video } from "@/types/client";
 import { useLanguage } from "@/context/language-context";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchHomepageDataAction } from "@/lib/actions";
 
-
+// export const dynamic = 'force-dynamic'
 function HomePageContent() {
   const { dictionary } = useLanguage();
   const t = dictionary.home_page;

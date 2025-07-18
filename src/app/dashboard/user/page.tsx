@@ -10,7 +10,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getUserDashboardStatsAction } from "@/lib/actions";
-import type { UserDashboardStats } from "@/types";
+import type { UserDashboardStats } from "@/types/server";
 import { useLanguage } from "@/context/language-context";
 
 export default function UserDashboardPage() {

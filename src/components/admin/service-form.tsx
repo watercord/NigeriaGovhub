@@ -11,10 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { addService, updateService } from "@/lib/actions";
 import { useRouter } from "next/navigation";
-import { serviceFormSchemaRaw, type ServiceItem, type ServiceFormData } from "@/types";
+import {  type ServiceItems, type ServiceFormData } from "@/types/client";
+import { serviceFormSchemaRaw } from "@/types/server"
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardDescription } from "@/components/ui/card";
+
 
 const serviceSchema = z.object({
   title: serviceFormSchemaRaw.title(z),
@@ -29,7 +31,7 @@ const serviceSchema = z.object({
 
 
 interface ServiceFormProps {
-  initialData?: ServiceItem;
+  initialData?: ServiceItems;
   serviceId?: string;
   onSuccess?: () => void;
 }

@@ -11,7 +11,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { getServiceByIdAction } from "@/lib/actions";
-import type { ServiceItem } from "@/types";
+import type { ServiceItem } from "@/types/server";
+import type { ServiceItems } from "@/types/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EditServicePage() {
@@ -21,6 +22,7 @@ export default function EditServicePage() {
   const pathname = usePathname();
   const serviceId = params.id as string;
   const { toast } = useToast();
+  const [services, setServices] = useState<ServiceItems | null>(null);
   const [service, setService] = useState<ServiceItem | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -105,7 +107,7 @@ export default function EditServicePage() {
           <CardDescription>Modify the details below to update the service listing.</CardDescription>
         </CardHeader>
         <CardContent>
-          {service && <ServiceForm initialData={service} serviceId={service.id} />}
+          {services && <ServiceForm initialData={services} serviceId={services.id} />}
         </CardContent>
       </Card>
     </div>

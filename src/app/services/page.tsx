@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getAllServices } from "@/lib/data";
 import { ServiceCard } from "@/components/services/service-card";
 import { Server } from "lucide-react";
-import type { ServiceItem } from "@/types";
+import type { ServiceItem } from "@/types/client";
 
 // This page is now a Server Component, fetching data directly
 export default async function ServicesPage() {

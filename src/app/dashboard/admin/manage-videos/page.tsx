@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, PlusCircle, PlayCircleIcon, Edit, Trash2, Loader2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
-import type { Video } from "@/types";
+import type { Video } from "@/types/server";
 import { useRouter, usePathname } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// export const dynamic = 'force-dynamic'
 export default function ManageVideosPage() {
   const { data: session, status } = useSession();
   const router = useRouter();

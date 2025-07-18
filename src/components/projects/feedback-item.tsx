@@ -1,4 +1,4 @@
-import type { Feedback } from '@/types';
+import type { Feedback } from '@/types/server';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MessageSquareText } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';

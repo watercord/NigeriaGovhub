@@ -19,13 +19,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import React, { useEffect, useState, useTransition, useCallback } from "react";
-import type { NewsArticle } from "@/types";
+import type { NewsArticle } from "@/types/server";
 import { useRouter, usePathname } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import Link from "next/link";
 import { deleteNewsArticle, fetchAllNewsArticlesAction } from "@/lib/actions"; // Use Server Action
 
+// export const dynamic = 'force-dynamic'
 export default function ManageNewsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();

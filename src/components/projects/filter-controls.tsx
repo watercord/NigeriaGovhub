@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Ministry, State } from '@/types';
+import type { Ministry, State } from '@/types/client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';

@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { ServiceItem } from '@/types';
+import type { ServiceItem } from '@/types/client';
 import { ServiceCard } from '@/components/services/service-card';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

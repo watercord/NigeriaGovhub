@@ -1,4 +1,4 @@
-import type { NewsComment } from '@/types';
+import type { NewsComment } from '@/types/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

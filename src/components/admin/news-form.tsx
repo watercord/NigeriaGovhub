@@ -16,10 +16,12 @@ import { addNewsArticle, updateNewsArticle } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { newsArticleFormSchemaRaw, type NewsArticle, type NewsArticleFormData } from "@/types";
+import {  type NewsArticleFormData } from "@/types/client";
+import { newsArticleFormSchemaRaw, type NewsArticle} from "@/types/server";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardDescription } from "@/components/ui/card";
+
 
 // Construct the Zod schema using the imported raw parts
 const newsSchema = z.object({

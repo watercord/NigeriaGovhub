@@ -44,14 +44,12 @@ export const createVerificationToken = async (email: string) => {
       .where(eq(verificationToken.token, existingToken.token));
   }
 
-  const [newToken] = await db
-    .insert(verificationToken)
-    .values({
-      identifier: email,
-      token,
-      expires,
-    })
-    .returning("*");
+  await db.insert(verificationToken).values({
+  identifier: email,
+  token,
+  expires,
+}).execute();
 
-  return newToken;
+return { identifier: email, token, expires };
+
 };

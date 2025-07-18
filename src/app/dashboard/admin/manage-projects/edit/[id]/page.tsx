@@ -11,7 +11,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { getProjectByIdAction } from "@/lib/actions";
-import type { Project } from "@/types";
+import type { Project } from "@/types/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function EditProjectPage() {

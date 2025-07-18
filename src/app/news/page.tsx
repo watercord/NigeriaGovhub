@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { getAllNewsArticles } from "@/lib/data";
 import { NewsCard } from "@/components/news/news-card";
 import { Newspaper } from "lucide-react";
-import type { NewsArticle } from "@/types";
+import type { NewsArticle } from "@/types/client";
 
 // This page is a Server Component, so we can fetch data directly
 export default async function NewsPage() {

@@ -25,11 +25,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useEffect, useState, useTransition, useCallback } from "react";
-import type { User as AppUser } from "@/types";
+import type { User as AppUser } from "@/types/server";
 import { useRouter, usePathname } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { deleteUser as deleteUserAction, fetchAllUsersAction } from "@/lib/actions"; // Use Server Action
 
+// export const dynamic = 'force-dynamic'
 export default function ManageUsersPage() {
   const { data: session, status } = useSession();
   const router = useRouter();

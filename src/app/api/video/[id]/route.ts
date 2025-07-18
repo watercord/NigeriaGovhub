@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getVideoByIdAction as getVideoById, updateVideo as updateVideoInDb } from "@/lib/actions";
-import { videoFormSchemaRaw, type VideoFormData } from "@/types";
+import { videoFormSchemaRaw } from "@/types/server";
+import { VideoFormData } from "@/types/client";
 import * as z from "zod";
 
 // Define Zod schema using videoFormSchemaRaw

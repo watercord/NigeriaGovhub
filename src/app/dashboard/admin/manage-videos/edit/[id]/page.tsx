@@ -11,9 +11,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { getVideoByIdAction } from "@/lib/actions"; // Use Server Action
-import type { Video } from "@/types";
+import type { Video } from "@/types/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// export const dynamic = 'force-dynamic'
 export default function EditVideoPage() {
   const { data: session, status } = useSession();
   const router = useRouter();

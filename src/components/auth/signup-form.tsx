@@ -8,14 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { createUserAction } from '@/lib/actions';
 import { signIn } from 'next-auth/react';
 import { useLanguage } from '@/context/language-context';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import { PasswordInput } from '../common/password-input';
+
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -47,11 +47,20 @@ export function SignupForm() {
     setError("");
     setSuccess("");
 
-    const result = await createUserAction({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-    });
+    const res = await fetch("/api/signup", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: formData.name,
+    email: formData.email,
+    password: formData.password,
+  }),
+});
+
+const result = await res.json();
+
 
     if (result.success) {
       setSuccess(result.message);

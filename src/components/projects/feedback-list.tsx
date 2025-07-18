@@ -1,4 +1,4 @@
-import type { Feedback } from '@/types';
+import type { Feedback } from '@/types/server';
 import { FeedbackItem } from './feedback-item';
 
 interface FeedbackListProps {
@@ -15,7 +15,11 @@ export function FeedbackList({ feedbackItems }: FeedbackListProps) {
   }
 
   // Sort feedback by newest first
-  const sortedFeedback = [...feedbackItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const sortedFeedback = [...feedbackItems].sort((a, b) => {
+    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return dateB - dateA;
+  });
 
   return (
     <div className="space-y-4">

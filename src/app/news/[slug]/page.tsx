@@ -1,26 +1,30 @@
-
+// src/app/news/[slug]/page.tsx
 import { getNewsArticleBySlug } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { CalendarDays, Tag, ArrowLeft, Bookmark, MessageSquare } from 'lucide-react';
+import { CalendarDays, Tag, ArrowLeft, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import type { NewsArticle } from '@/types';
-import { BookmarkButton } from '@/components/news/bookmark-button';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { Separator } from '@/components/ui/separator';
 import { LikeButton } from '@/components/news/like-button';
+import { BookmarkButton } from '@/components/news/bookmark-button';
 import { CommentForm } from '@/components/news/comment-form';
 import { CommentList } from '@/components/news/comment-list';
+import type { NewsArticle } from '@/types/server';
 
-// This component remains a Server Component
-export default async function NewsArticlePage({ params }: { params: { slug: string } }) {
+interface NewsArticlePageProps {
+  params: { slug: string };
+}
+
+export default async function NewsArticlePage({ params }: NewsArticlePageProps) {
+  const { slug } = await params;
   const session = await getServerSession(authOptions);
-  const article = await getNewsArticleBySlug(params.slug, session?.user?.id);
+  const article = await getNewsArticleBySlug(slug, session?.user?.id);
 
   if (!article) {
     notFound();
@@ -29,7 +33,9 @@ export default async function NewsArticlePage({ params }: { params: { slug: stri
   return (
     <div className="max-w-3xl mx-auto py-8 space-y-8">
       <Button variant="outline" asChild className="mb-4 button-hover">
-        <Link href="/news"><ArrowLeft className="mr-2 h-4 w-4" /> Back to News</Link>
+        <Link href="/news">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to News
+        </Link>
       </Button>
       <Card className="overflow-hidden shadow-lg">
         {article.imageUrl && (
@@ -37,14 +43,16 @@ export default async function NewsArticlePage({ params }: { params: { slug: stri
             <Image
               src={article.imageUrl}
               alt={article.title}
-              layout="fill"
-              objectFit="cover"
-              data-ai-hint={article.dataAiHint || "news article"}
+              fill
+              style={{ objectFit: 'cover' }}
+              data-ai-hint={article.dataAiHint || 'news article'}
             />
           </div>
         )}
         <CardHeader>
-          <CardTitle className="font-headline text-3xl md:text-4xl text-primary flex-1">{article.title}</CardTitle>
+          <CardTitle className="font-headline text-3xl md:text-4xl text-primary flex-1">
+            {article.title}
+          </CardTitle>
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground mt-2">
             <div className="flex items-center">
               <CalendarDays className="h-4 w-4 mr-1.5" />
@@ -63,12 +71,12 @@ export default async function NewsArticlePage({ params }: { params: { slug: stri
           />
         </CardContent>
         <CardFooter className="flex justify-between items-center border-t pt-4">
-            <LikeButton
-                articleId={article.id}
-                initialIsLiked={article.isLikedByUser}
-                initialLikeCount={article.likeCount}
-            />
-             {session?.user && <BookmarkButton articleId={article.id} />}
+          <LikeButton
+            articleId={article.id}
+            initialIsLiked={article.isLikedByUser}
+            initialLikeCount={article.likeCount}
+          />
+          {session?.user && <BookmarkButton articleId={article.id} />}
         </CardFooter>
       </Card>
 
@@ -76,20 +84,20 @@ export default async function NewsArticlePage({ params }: { params: { slug: stri
 
       <section id="comments-section" className="space-y-6">
         <h2 className="font-headline text-2xl font-bold text-foreground flex items-center">
-            <MessageSquare className="h-6 w-6 mr-3 text-primary" /> Comments ({article.comments.length})
+          <MessageSquare className="h-6 w-6 mr-3 text-primary" /> Comments ({article.comments.length})
         </h2>
 
         {session?.user ? (
-            <CommentForm articleId={article.id} />
+          <CommentForm articleId={article.id} />
         ) : (
-            <Card className="text-center p-6">
-                <p className="text-muted-foreground">You must be logged in to leave a comment.</p>
-                <Button asChild variant="link" className="mt-2">
-                    <Link href={`/login?redirect=/news/${article.slug}`}>
-                        Log In or Sign Up
-                    </Link>
-                </Button>
-            </Card>
+          <Card className="text-center p-6">
+            <p className="text-muted-foreground">You must be logged in to leave a comment.</p>
+            <Button asChild variant="link" className="mt-2">
+              <Link href={`/login?redirect=/news/${article.slug}`}>
+                Log In or Sign Up
+              </Link>
+            </Button>
+          </Card>
         )}
 
         <CommentList comments={article.comments} />

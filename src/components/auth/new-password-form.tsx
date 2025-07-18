@@ -9,12 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useState, useTransition } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { newPasswordAction } from '@/lib/actions';
 import { useLanguage } from '@/context/language-context';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { PasswordInput } from '../common/password-input';
+
 
 const newPasswordSchema = z.object({
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
@@ -45,12 +45,21 @@ export function NewPasswordForm() {
     }
 
     startTransition(() => {
-      newPasswordAction(data.password, token)
-        .then((res: { error?: string; success?: string }) => {
-          setError(res.error);
-          setSuccess(res.success);
-        });
+  fetch("/api/new-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password: data.password, token }),
+  })
+    .then(async (res) => {
+      const result = await res.json();
+      setError(result.error);
+      setSuccess(result.success);
+    })
+    .catch(() => {
+      setError("Something went wrong. Please try again.");
     });
+});
+
   };
 
   return (

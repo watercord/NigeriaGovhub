@@ -45,15 +45,16 @@ export const createPasswordResetToken = async (email: string) => {
       .where(eq(passwordResetToken.id, existingToken.id));
   }
 
-  const [newToken] = await db
-    .insert(passwordResetToken)
-    .values({
-      id: uuidv4(),
-      identifier: email,
-      token,
-      expires,
-    })
-    .$returningId();
+  await db.insert(passwordResetToken).values({
+  id: uuidv4(),
+  identifier: email,
+  token,
+  expires,
+}).execute();
 
-  return newToken;
+return {
+  identifier: email,
+  token,
+  expires,
+};
 };

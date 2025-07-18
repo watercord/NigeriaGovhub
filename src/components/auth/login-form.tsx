@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,8 +15,8 @@ import { PasswordInput } from '../common/password-input';
 import Link from 'next/link';
 
 const loginSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(1, { message: "Password is required." }),
+  email: z.string().email({ message: 'Invalid email address.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -37,25 +36,35 @@ export function LoginForm() {
 
   const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
     setIsLoadingCredentials(true);
-    const result = await signIn('credentials', {
-      redirect: false,
-      email: data.email,
-      password: data.password,
-    });
-
-    if (result?.error) {
-      toast({
-        title: "Login Failed",
-        description: result.error || "Invalid email or password.",
-        variant: "destructive",
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        email: data.email,
+        password: data.password,
+        callbackUrl: searchParams.get('redirect') || '/dashboard/user',
       });
-    } else if (result?.ok) {
-      toast({ title: "Login Successful", description: "Welcome back!" });
-      const redirectUrl = searchParams.get('redirect') || '/dashboard/user';
-      router.push(redirectUrl);
-      router.refresh();
+
+      if (result?.error) {
+        toast({
+          title: 'Login Failed',
+          description: result.error,
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: 'Login Successful', description: 'Welcome back!' });
+        router.push(searchParams.get('redirect') || '/dashboard/user');
+        router.refresh();
+      }
+    } catch (error) {
+      toast({
+        title: 'Login Error',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+      console.error('Login error:', error);
+    } finally {
+      setIsLoadingCredentials(false);
     }
-    setIsLoadingCredentials(false);
   };
 
   const handleGoogleSignIn = async () => {
@@ -68,6 +77,7 @@ export function LoginForm() {
 
   return (
     <div className="space-y-6">
+      {/* Uncomment if Google provider is configured */}
       {/* <Button
         variant="outline"
         className="w-full button-hover"
@@ -102,9 +112,9 @@ export function LoginForm() {
             id="email"
             type="email"
             autoComplete="email"
-            {...register("email")}
+            {...register('email')}
             className="mt-1"
-            aria-invalid={errors.email ? "true" : "false"}
+            aria-invalid={errors.email ? 'true' : 'false'}
           />
           {errors.email && <p className="text-sm text-destructive mt-1">{errors.email.message}</p>}
         </div>
@@ -119,9 +129,9 @@ export function LoginForm() {
           <PasswordInput
             id="password"
             autoComplete="current-password"
-            {...register("password")}
+            {...register('password')}
             className="mt-1"
-            aria-invalid={errors.password ? "true" : "false"}
+            aria-invalid={errors.password ? 'true' : 'false'}
           />
           {errors.password && <p className="text-sm text-destructive mt-1">{errors.password.message}</p>}
         </div>

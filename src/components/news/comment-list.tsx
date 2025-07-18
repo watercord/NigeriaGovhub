@@ -1,5 +1,5 @@
 
-import type { NewsComment } from '@/types';
+import type { NewsComment } from '@/types/client';
 import { CommentItem } from './comment-item';
 
 interface CommentListProps {

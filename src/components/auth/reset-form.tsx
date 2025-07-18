@@ -9,11 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useState, useTransition } from 'react';
-import { resetAction } from '@/lib/actions';
 import { useLanguage } from '@/context/language-context';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+
 
 const resetSchema = z.object({
   email: z.string().email({ message: "An email is required." }),
@@ -36,11 +36,20 @@ export function ResetForm() {
     setError("");
     setSuccess("");
     startTransition(() => {
-      resetAction(data.email)
-        .then((res) => {
-          setError(res.error);
-          setSuccess(res.success);
-        });
+      fetch("/api/reset", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email: data.email }),
+})
+  .then(async (res) => {
+    const result = await res.json();
+    setError(result.error);
+    setSuccess(result.success);
+  })
+  .catch(() => {
+    setError("Something went wrong. Please try again.");
+  });
+
     });
   };
 
