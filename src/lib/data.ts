@@ -505,48 +505,96 @@ export type VideoCreationData = Omit<InferSelectModel<typeof video>, 'id' | 'cre
 
 export const getNewsArticleBySlug = async (slug: string, userId?: string): Promise<NewsArticle | null> => {
   try {
-    const newsArticle = await db.query.newsarticle.findFirst({
-      where: eq(newsarticle.slug, slug),
-      with: {
-        newscomments: {
-          with: {
-            user: {
-              columns: { id: true, name: true, image: true },
-            },
-          },
-          orderBy: [desc(newscomment.createdAt)],
-        },
-      },
-    });
-    if (!newsArticle) return null;
-    const likeCount = await db.select({ count: sql`COUNT(*)` })
+    console.log(`[getNewsArticleBySlug] Fetching article with slug: ${slug}, userId: ${userId || "none"}`);
+
+    // Step 1: Fetch the article
+    const newsArticle = await db
+      .select({
+        id: newsarticle.id,
+        slug: newsarticle.slug,
+        title: newsarticle.title,
+        summary: newsarticle.summary,
+        imageUrl: newsarticle.imageUrl,
+        dataAiHint: newsarticle.dataAiHint,
+        category: newsarticle.category,
+        publishedDate: newsarticle.publishedDate,
+        content: newsarticle.content,
+        createdAt: newsarticle.createdAt,
+        updatedAt: newsarticle.updatedAt,
+      })
+      .from(newsarticle)
+      .where(eq(newsarticle.slug, slug))
+      .limit(1)
+      .then((res) => res[0]);
+
+    if (!newsArticle) {
+      console.log(`[getNewsArticleBySlug] No article found for slug: "${slug}"`);
+      return null;
+    }
+
+    console.log(`[getNewsArticleBySlug] Found article: ${newsArticle.title}`);
+
+    // Step 2: Fetch comments
+    const comments = await db
+      .select({
+        id: newscomment.id,
+        content: newscomment.content,
+        createdAt: newscomment.createdAt,
+        userId: newscomment.user_id,
+        userName: user.name,
+        userImage: user.image,
+      })
+      .from(newscomment)
+      .leftJoin(user, eq(newscomment.user_id, user.id))
+      .where(eq(newscomment.news_article_id, newsArticle.id))
+      .orderBy(desc(newscomment.createdAt));
+
+    // Step 3: Fetch like count
+    const likeCount = await db
+      .select({ count: sql`COUNT(*)` })
       .from(newslike)
       .where(eq(newslike.news_article_id, newsArticle.id))
-      .then(res => Number(res[0].count));
+      .then((res) => {
+        console.log(`[getNewsArticleBySlug] Like count: ${res[0].count}`);
+        return Number(res[0].count);
+      });
+
+    // Step 4: Check if liked by user
     let isLiked = false;
     if (userId) {
-      const like = await db.select()
+      const like = await db
+        .select()
         .from(newslike)
         .where(and(eq(newslike.user_id, userId), eq(newslike.news_article_id, newsArticle.id)))
         .limit(1);
       isLiked = like.length > 0;
+      console.log(`[getNewsArticleBySlug] Is liked by user: ${isLiked}`);
     }
-    return {
+
+    const result = {
       ...mapPrismaNewsToAppNews(newsArticle),
       likeCount,
       isLikedByUser: isLiked,
-      comments: newsArticle.newscomments?.map((c) => ({
+      comments: comments.map((c) => ({
         id: c.id,
         content: c.content,
         createdAt: c.createdAt ? new Date(c.createdAt) : null,
-        user: c.user
-          ? { id: c.user.id, name: c.user.name, image: c.user.image }
-          : { id: '', name: 'Anonymous', image: null },
-      })) || [],
+        user: c.userId
+          ? { id: c.userId, name: c.userName || "Anonymous", image: c.userImage }
+          : { id: "", name: "Anonymous", image: null },
+      })),
     };
-  } catch (error) {
-    console.error(`Error fetching news article by slug "${slug}" with Drizzle:`, error);
-    return null;
+
+    console.log(`[getNewsArticleBySlug] Successfully fetched article: ${result.title}`);
+    return result;
+  } catch (error: any) {
+    console.error(`[getNewsArticleBySlug] Error fetching news article by slug "${slug}" with Drizzle:`, {
+      message: error.message,
+      code: error.code,
+      sql: error.sql,
+      stack: error.stack,
+    });
+    throw error;
   }
 };
 
