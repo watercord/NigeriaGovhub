@@ -6,6 +6,22 @@ body {
   font-family: var(--font-body), sans-serif;
 }
 
+.ql-toolbar.ql-snow {
+  border: 1px solid #ccc;
+  border-bottom: none;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.ql-container.ql-snow {
+  border: 1px solid #ccc;
+  border-top: none;
+  min-height: 300px;
+}
+.ql-editor {
+  min-height: 250px;
+}
+
 @layer base {
   :root {
     --background: 150 60% 94%; /* Very light green #E8F8F0 */

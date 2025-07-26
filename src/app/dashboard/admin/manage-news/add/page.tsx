@@ -1,7 +1,6 @@
-
 "use client";
 
-import { NewsArticleForm } from "@/components/admin/news-form";
+import NewsArticleForm from "@/components/admin/news-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
@@ -57,9 +56,10 @@ export default function AddNewsArticlePage() {
           <CardDescription>Fill in the details below to create a new news article.</CardDescription>
         </CardHeader>
         <CardContent>
-          <NewsArticleForm />
+          <NewsArticleForm initialData={undefined} />
         </CardContent>
       </Card>
     </div>
   );
 }
+

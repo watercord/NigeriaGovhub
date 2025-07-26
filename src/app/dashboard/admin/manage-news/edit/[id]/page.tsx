@@ -1,7 +1,6 @@
-
 "use client";
 
-import { NewsArticleForm } from "@/components/admin/news-form";
+import NewsArticleForm from "@/components/admin/news-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +13,7 @@ import { getNewsArticleByIdAction } from "@/lib/actions";
 import type { NewsArticle } from "@/types/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// export const dynamic = 'force-dynamic'
+
 export default function EditNewsArticlePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -106,6 +105,7 @@ export default function EditNewsArticlePage() {
           <CardDescription>Modify the details below to update the news article.</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Ensure NewsArticleForm is the correct component and accepts initialData */}
           {article && <NewsArticleForm initialData={article} articleId={article.id} />}
         </CardContent>
       </Card>

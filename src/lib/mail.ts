@@ -19,8 +19,13 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     await resend.emails.send({
       from: "support@nigeriagovhub.com", // Replace with your verified domain, e.g., "noreply@yourdomain.com"
       to: email,
-      subject: "NigeriaGovHub: Verify your email address",
-      html: `<p>Welcome to NigeriaGovHub! Click the link below to verify your email address and complete your registration:</p><p><a href="${verificationLink}">Verify Email</a> <br> Ignore if you didn't initiate this process.</p>`,
+      subject: "Action Required: Verify Your Email Address with NigeriaGovHub",
+      html: `<p>Welcome to NigeriaGovHub! <br> To complete your registration and start using our services, 
+      please verify your email address by clicking the link below:</p><br>
+      <p><a href="${verificationLink}">Verify Email</a> <br> If you did not request this,
+       please feel free to ignore this email.</p><br>
+      <p>Thank you for choosing NigeriaGovHub! We look forward to serving you.</p><br>
+      <p>Best regards,<br>The NigeriaGovHub Team</p>`,
     });
   } catch (error) {
     console.error("Failed to send verification email:", error);
@@ -44,8 +49,12 @@ export const sendPasswordResetEmail = async (email: string, token: string) => {
     await resend.emails.send({
       from: "support@nigeriagovhub.com", // Replace with your verified domain, e.g., "noreply@yourdomain.com"
       to: email,
-      subject: "NigeriaGovHub: Reset your password",
-      html: `<p>Click the link below to reset your password:</p><p><a href="${resetLink}">Reset Password</a></p>`,
+      subject: "Reset Your Password for NigeriaGovHub",
+      html: `<p>We received a request to reset your password for your NigeriaGovHub account. 
+      To proceed, please click the link below:</p>
+      <p><a href="${resetLink}">Reset Password</a></p>
+      <p>If you did not request a password reset,
+       please disregard this email.Thank you,The NigeriaGovHub Team</p>`,
     });
   } catch (error) {
     console.error("Failed to send password reset email:", error);
