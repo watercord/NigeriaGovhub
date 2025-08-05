@@ -35,7 +35,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/privacy-policy" className="hover:text-primary transition-colors">{t.privacy_policy}</Link></li>
               <li><Link href="/terms-of-service" className="hover:text-primary transition-colors">{t.terms_of_service}</Link></li>
-              <li><Link href="/accessibility" className="hover:text-primary transition-colors">{t.accessibility}</Link></li>
+              <li><Link href="/accessibility" className="hover:text-primary transition-colors">{t.disclaimer}</Link></li>
             </ul>
           </div>
           <div>
