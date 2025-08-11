@@ -58,7 +58,6 @@ export default function QuillEditor({ value, onChange }: QuillEditorProps) {
       // Handle image uploads
       const toolbar = quillInstance.current.getModule('toolbar');
       const handleImageUpload = async () => {
-        console.log('[QuillEditor] Initiating image upload');
         const input = document.createElement('input');
         input.setAttribute('type', 'file');
         input.setAttribute('accept', 'image/*');
@@ -80,7 +79,6 @@ export default function QuillEditor({ value, onChange }: QuillEditorProps) {
                 const range = quillInstance.current!.getSelection();
                 if (range) {
                   quillInstance.current!.insertEmbed(range.index, 'image', data.secure_url);
-                  console.log('[QuillEditor] Image inserted:', data.secure_url);
                 }
               } else {
                 console.error('[QuillEditor] Image upload failed:', data.error);
@@ -93,25 +91,23 @@ export default function QuillEditor({ value, onChange }: QuillEditorProps) {
       };
       (toolbar as any).addHandler('image', handleImageUpload);
 
-      isInitialized.current = true; // Set to true to prevent re-initialization
+      isInitialized.current = true;
     }
 
-    // Cleanup
+    // Cleanup function - only reset the initialization flag if we actually have an instance
     return () => {
-      console.log('[QuillEditor] Cleaning up Quill instance');
       if (quillInstance.current) {
         quillInstance.current.off('text-change');
         quillInstance.current = null;
+        isInitialized.current = false;
       }
-      isInitialized.current = false;
     };
-  }, [onChange]);
+  }, []); // Empty dependency array - we only want to initialize once
 
 
   useEffect(() => {
     if (quillInstance.current && value !== quillInstance.current.root.innerHTML) {
-      console.log('[QuillEditor] Updating content');
-      quillInstance.current.clipboard.dangerouslyPasteHTML(value);
+      quillInstance.current.clipboard.dangerouslyPasteHTML(value || '');
     }
   }, [value]);
 

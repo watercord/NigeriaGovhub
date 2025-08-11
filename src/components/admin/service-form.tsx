@@ -7,7 +7,6 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { addService, updateService } from "@/lib/actions";
 import { useRouter } from "next/navigation";
@@ -16,6 +15,7 @@ import { serviceFormSchemaRaw } from "@/types/server"
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardDescription } from "@/components/ui/card";
+import QuillEditor from "@/components/QuillEditor";
 
 
 const serviceSchema = z.object({
@@ -42,7 +42,7 @@ export function ServiceForm({ initialData, serviceId, onSuccess }: ServiceFormPr
   const isEditMode = !!serviceId;
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm<ServiceFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue, watch } = useForm<ServiceFormData>({
     resolver: zodResolver(serviceSchema),
     defaultValues: initialData ? {
       ...initialData,
@@ -61,6 +61,8 @@ export function ServiceForm({ initialData, serviceId, onSuccess }: ServiceFormPr
       iconName: undefined,
     },
   });
+
+  const watchSummary = watch("summary", initialData?.summary || "");
 
   useEffect(() => {
     if (initialData) {
@@ -159,7 +161,10 @@ export function ServiceForm({ initialData, serviceId, onSuccess }: ServiceFormPr
 
       <div>
         <Label htmlFor="summary">Summary</Label>
-        <Textarea id="summary" {...register("summary")} rows={3} className="mt-1" />
+        <QuillEditor 
+          value={watchSummary} 
+          onChange={(content) => setValue("summary", content)} 
+        />
         {errors.summary && <p className="text-sm text-destructive mt-1">{errors.summary.message}</p>}
       </div>
 

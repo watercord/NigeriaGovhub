@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { projectFormSchemaRaw, type Project } from '@/types/server';
 import { type ProjectFormData } from '@/types/client';
 import { useEffect, useState } from 'react';
+import QuillEditor from '@/components/QuillEditor';
 
 const projectSchema = z.object({
   title: projectFormSchemaRaw.title(z),
@@ -50,7 +51,7 @@ export function ProjectForm({ initialData, projectId, onSuccess }: ProjectFormPr
   const [uploading, setUploading] = useState(false);
   const [imagePreviews, setImagePreviews] = useState<{ url: string; alt: string; dataAiHint?: string }[]>(initialData?.images || []);
 
-  const { control, register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm<ProjectFormData>({
+  const { control, register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue, watch } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema as z.Schema<ProjectFormData>),
     defaultValues: initialData ? {
       ...initialData,
@@ -77,6 +78,8 @@ export function ProjectForm({ initialData, projectId, onSuccess }: ProjectFormPr
       images: [],
     },
   });
+
+  const watchDescription = watch("description", initialData?.description || "");
 
   useEffect(() => {
     if (initialData) {
@@ -309,9 +312,14 @@ export function ProjectForm({ initialData, projectId, onSuccess }: ProjectFormPr
       </div>
 
       <div>
+        {/* <Label htmlFor="description">Project Description</Label>
+        <Textarea id="description" {...register('description')} rows={5} className="mt-1" /> */}
         <Label htmlFor="description">Project Description</Label>
-        <Textarea id="description" {...register('description')} rows={5} className="mt-1" />
-        {errors.description && <p className="text-sm text-destructive mt-1">{errors.description.message}</p>}
+      <QuillEditor 
+        value={watchDescription} 
+        onChange={(content) => setValue("description", content)} 
+      />
+      {errors.description && <p className="text-sm text-destructive mt-1">{errors.description.message}</p>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
