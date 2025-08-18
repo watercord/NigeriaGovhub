@@ -49,7 +49,20 @@ export type Video = InferSelectModel<typeof video> & {
 
 export const videoFormSchemaRaw = {
   title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(200),
-  url: (z: any) => z.string().url("Must be a valid URL (e.g., from Cloudinary or YouTube embed)."),
+  url: (z: any) => z.string().refine(
+    (url) => {
+      try {
+        // Check if it's a valid URL
+        new URL(url);
+        return true;
+      } catch {
+        // If not a valid URL, check if it's a YouTube URL
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)/;
+        return youtubeRegex.test(url);
+      }
+    },
+    "Must be a valid URL or YouTube link."
+  ),
   thumbnailUrl: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
   dataAiHint: (z: any) => z.string().max(50, "AI hint for thumbnail too long (max 2 words).").optional().nullable(),
   description: (z: any) => z.string().max(500, "Description too long.").optional().nullable(),

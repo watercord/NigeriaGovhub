@@ -17,6 +17,37 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardDescription } from "@/components/ui/card";
 
+// Function to convert YouTube URL to embed format
+const convertToEmbedUrl = (url: string): string => {
+  // Handle different YouTube URL formats
+  let videoId = '';
+  
+  // Format: https://www.youtube.com/watch?v=VIDEO_ID
+  const youtubeWatchRegex = /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/;
+  const watchMatch = url.match(youtubeWatchRegex);
+  
+  // Format: https://youtu.be/VIDEO_ID
+  const youtuBeRegex = /youtu\.be\/([a-zA-Z0-9_-]+)/;
+  const shortMatch = url.match(youtuBeRegex);
+  
+  // Format: https://www.youtube.com/embed/VIDEO_ID
+  const embedRegex = /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/;
+  const embedMatch = url.match(embedRegex);
+  
+  if (watchMatch) {
+    videoId = watchMatch[1];
+  } else if (shortMatch) {
+    videoId = shortMatch[1];
+  } else if (embedMatch) {
+    videoId = embedMatch[1];
+  } else {
+    // If no match, return original URL
+    return url;
+  }
+  
+  // Return embed URL
+  return `https://www.youtube.com/embed/${videoId}`;
+};
 
 const videoSchema = z.object({
   title: videoFormSchemaRaw.title(z),
@@ -82,8 +113,10 @@ export function VideoForm({ initialData, videoId, onSuccess }: VideoFormProps) {
   };
 
   const onSubmit: SubmitHandler<VideoFormData> = async (data) => {
+    // Convert YouTube URL to embed format before submitting
     const dataToSubmit = {
       ...data,
+      url: convertToEmbedUrl(data.url),
       thumbnailUrl: data.thumbnailUrl || null,
       dataAiHint: data.dataAiHint || null,
       description: data.description || null,
@@ -127,8 +160,16 @@ export function VideoForm({ initialData, videoId, onSuccess }: VideoFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="url">Video Embed URL</Label>
-        <Input id="url" {...register("url")} className="mt-1" placeholder="e.g., https://www.youtube.com/embed/VIDEO_ID" />
+        <Label htmlFor="url">YouTube Video URL</Label>
+        <Input 
+          id="url" 
+          {...register("url")} 
+          className="mt-1" 
+          placeholder="e.g., https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID" 
+        />
+        <p className="text-sm text-muted-foreground mt-1">
+          Enter a YouTube video URL. It will be automatically converted to embed format.
+        </p>
         {errors.url && <p className="text-sm text-destructive mt-1">{errors.url.message}</p>}
       </div>
 

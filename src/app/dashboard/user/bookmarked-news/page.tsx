@@ -106,9 +106,9 @@ export default function MyBookmarkedNewsPage() {
       ) : (
         <Card>
           <CardContent className="text-center py-12">
-            <p className="text-xl text-muted-foreground mb-4">You haven't bookmarked any news articles yet.</p>
+            <p className="text-xl text-muted-foreground mb-4">You haven't bookmarked any articles yet.</p>
             <Button asChild className="button-hover">
-              <Link href="/news">Explore News Articles</Link>
+              <Link href="/articles">Explore Articles</Link>
             </Button>
           </CardContent>
         </Card>

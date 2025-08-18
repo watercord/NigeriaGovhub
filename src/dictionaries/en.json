@@ -3,7 +3,7 @@
   "header": {
     "home": "Home",
     "projects": "Projects",
-    "news": "News",
+    "news": "Articles",
     "services": "Services",
     "public_services": "Public Services",
     "explore_nigeria": "Explore Nigeria",
@@ -46,7 +46,7 @@
   "home_page": {
     "hero_title": "See What Nigeria is Building",
     "hero_subtitle": "Discover transparent insights into government projects and initiatives across all sectors. Track progress, understand impact, and engage with a new era of governance.",
-    "search_placeholder": "Search for projects like 'Lagos-Ibadan Expressway'...",
+    "search_placeholder": "Search for projects, opportunities, articles...",
     "search_button": "Search",
     "explore_projects_button": "Explore All Projects",
     "learn_more_button": "Learn More",
@@ -60,8 +60,8 @@
     "featured_initiatives_title": "Featured Initiatives",
     "view_details_button": "View Details",
     "view_all_projects_button": "View All Projects",
-    "latest_news_title": "Latest News & Updates",
-    "view_all_news_button": "View All News",
+    "latest_news_title": "Latest Articles & Updates",
+    "view_all_news_button": "View All Articles",
     "popular_services_title": "Popular Government Services",
     "explore_all_services_button": "Explore All Services",
     "featured_videos_title": "Featured Videos",

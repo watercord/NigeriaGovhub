@@ -1,4 +1,3 @@
-
 import type { Video } from '@/types/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
@@ -8,7 +7,41 @@ interface VideoCardProps {
   embed?: boolean; // If true, embeds video directly. If false, shows thumbnail and title.
 }
 
+// Function to convert YouTube URL to embed format
+const convertToEmbedUrl = (url: string): string => {
+  // Handle different YouTube URL formats
+  let videoId = '';
+  
+  // Format: https://www.youtube.com/watch?v=VIDEO_ID
+  const youtubeWatchRegex = /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/;
+  const watchMatch = url.match(youtubeWatchRegex);
+  
+  // Format: https://youtu.be/VIDEO_ID
+  const youtuBeRegex = /youtu\.be\/([a-zA-Z0-9_-]+)/;
+  const shortMatch = url.match(youtuBeRegex);
+  
+  // Format: https://www.youtube.com/embed/VIDEO_ID
+  const embedRegex = /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/;
+  const embedMatch = url.match(embedRegex);
+  
+  if (watchMatch) {
+    videoId = watchMatch[1];
+  } else if (shortMatch) {
+    videoId = shortMatch[1];
+  } else if (embedMatch) {
+    videoId = embedMatch[1];
+  } else {
+    // If no match, return original URL
+    return url;
+  }
+  
+  // Return embed URL
+  return `https://www.youtube.com/embed/${videoId}`;
+};
+
 export function VideoCard({ video, embed = false }: VideoCardProps) {
+  const embedUrl = convertToEmbedUrl(video.url);
+  
   return (
     <Card className="overflow-hidden card-hover shadow-md">
       <CardHeader className="p-0">
@@ -17,7 +50,7 @@ export function VideoCard({ video, embed = false }: VideoCardProps) {
             <iframe
               width="100%"
               height="100%"
-              src={video.url}
+              src={embedUrl}
               title={video.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

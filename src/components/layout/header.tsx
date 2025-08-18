@@ -102,7 +102,8 @@ export function Header() {
         <nav className="hidden lg:flex items-center space-x-1">
           <NavLink href="/" className="px-2">{t.home}</NavLink>
           <NavLink href="/projects" className="px-2">{t.projects}</NavLink>
-          <NavLink href="/news" className="px-2">{t.news}</NavLink>
+          <NavLink href="/articles" className="px-2">{t.news}</NavLink>
+          <NavLink href="/opportunity" className="px-2">{t.opportunities}</NavLink>
           <NavLink href="/services" className="px-2">{t.services}</NavLink>
           <NavDropdown label={t.public_services} items={publicServicesItems} />
           <NavDropdown label={t.explore_nigeria} items={exploreNigeriaItems} />
@@ -180,7 +181,8 @@ const MobileNav = () => {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuItem asChild><NavLink href="/" className="w-full">{t.home}</NavLink></DropdownMenuItem>
         <DropdownMenuItem asChild><NavLink href="/projects" className="w-full">{t.projects}</NavLink></DropdownMenuItem>
-        <DropdownMenuItem asChild><NavLink href="/news" className="w-full">{t.news}</NavLink></DropdownMenuItem>
+        <DropdownMenuItem asChild><NavLink href="/articles" className="w-full">{t.news}</NavLink></DropdownMenuItem>
+        <DropdownMenuItem asChild><NavLink href="/opportunity" className="w-full">Opportunities</NavLink></DropdownMenuItem>
         <DropdownMenuItem asChild><NavLink href="/services" className="w-full">{t.services}</NavLink></DropdownMenuItem>
 
         <DropdownMenuSeparator />
