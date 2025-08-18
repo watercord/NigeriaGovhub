@@ -1,0 +1,1 @@
+ALTER TABLE `bookmarkednewsarticle` MODIFY COLUMN `id` varchar(36) NOT NULL;

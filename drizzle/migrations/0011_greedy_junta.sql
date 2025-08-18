@@ -1,0 +1,1 @@
+ALTER TABLE `newscomment` MODIFY COLUMN `news_article_id` varchar(36);

@@ -1,0 +1,1 @@
+ALTER TABLE `bookmarkednewsarticle` MODIFY COLUMN `user_id` varchar(255);

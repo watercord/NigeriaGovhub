@@ -117,3 +117,4 @@ export default function QuillEditor({ value, onChange }: QuillEditorProps) {
     </div>
   );
 }
+                                    
