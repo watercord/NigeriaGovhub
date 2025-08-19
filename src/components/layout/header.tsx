@@ -193,7 +193,7 @@ export function Header() {
             label={"Explore"}
             items={[
               { href: "/projects", label: t.projects, icon: Briefcase },
-              { href: "/news", label: t.articles || t.news, icon: Newspaper },
+              { href: "/articles", label: t.articles, icon: Newspaper },
               {
                 href: "/site-feedback",
                 label: t.feedback,
