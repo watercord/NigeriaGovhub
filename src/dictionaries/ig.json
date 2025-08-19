@@ -1,9 +1,9 @@
-
 {
   "header": {
     "home": "Ụlọ",
     "projects": "Ọrụ",
     "news": "Ozi ọma",
+    "articles": "Edemede",
     "services": "Ọrụ",
     "public_services": "Ọrụ Ọha",
     "explore_nigeria": "Nyochaa Naịjirịa",
@@ -60,8 +60,8 @@
     "featured_initiatives_title": "Atụmatụ ndị egosipụtara",
     "view_details_button": "Lelee Nkọwa",
     "view_all_projects_button": "Lelee Ọrụ Niile",
-    "latest_news_title": "Ozi ọma & Mmelite Ọhụrụ",
-    "view_all_news_button": "Lelee Ozi ọma Niile",
+    "latest_news_title": "Edemede & Mmelite Ọhụrụ",
+    "view_all_news_button": "Lelee Edemede Niile",
     "popular_services_title": "Ọrụ Gọọmentị Ndị A Ma Ama",
     "explore_all_services_button": "Nyochaa Ọrụ Niile",
     "featured_videos_title": "Vidio ndị egosipụtara",
@@ -106,6 +106,7 @@
     "manage_users": "Jikwaa Ndị ọrụ",
     "manage_projects": "Jikwaa Ọrụ",
     "manage_news": "Jikwaa Ozi ọma",
+    "manage_opportunities": "Jikwaa Ogo",
     "manage_services": "Jikwaa Ọrụ",
     "manage_videos": "Jikwaa Vidio",
     "manage_feedback": "Jikwaa Nkwughachi",

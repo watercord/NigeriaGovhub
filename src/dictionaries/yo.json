@@ -1,9 +1,9 @@
-
 {
   "header": {
     "home": "Ilé",
     "projects": "Àwọn iṣẹ́",
     "news": "Ìròyìn",
+    "articles": "Àwọn Àtẹjáde",
     "services": "Àwọn iṣẹ́",
     "public_services": "Àwọn iṣẹ́ ìjọba",
     "explore_nigeria": "Ṣàwárí Nàìjíríà",
@@ -60,8 +60,8 @@
     "featured_initiatives_title": "Àwọn Ètò Pàtàkì",
     "view_details_button": "Wo Àlàyé Kíkún",
     "view_all_projects_button": "Wo Gbogbo Àwọn Iṣẹ́",
-    "latest_news_title": "Àwọn Ìròyìn & Àtúnyẹ̀wò Tuntun",
-    "view_all_news_button": "Wo Gbogbo Ìròyìn",
+    "latest_news_title": "Àwọn Àtẹjáde & Àtúnyẹ̀wò Tuntun",
+    "view_all_news_button": "Wo Gbogbo Àwọn Àtẹjáde",
     "popular_services_title": "Àwọn Iṣẹ́ Ìjọba Tí Ó Gbajúmọ̀",
     "explore_all_services_button": "Ṣàwárí Gbogbo Àwọn Iṣẹ́",
     "featured_videos_title": "Àwọn Fídíò Pàtàkì",
@@ -106,6 +106,7 @@
     "manage_users": "Ṣàkóso Àwọn Olùlò",
     "manage_projects": "Ṣàkóso Àwọn Iṣẹ́",
     "manage_news": "Ṣàkóso Ìròyìn",
+    "manage_opportunities": "Ṣàkóso Àwọn Aṣáyọrí",
     "manage_services": "Ṣàkóso Àwọn Iṣẹ́",
     "manage_videos": "Ṣàkóso Àwọn Fídíò",
     "manage_feedback": "Ṣàkóso Èsì",

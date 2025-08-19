@@ -1,9 +1,9 @@
-
 {
   "header": {
     "home": "Gida",
     "projects": "Ayyuka",
     "news": "Labarai",
+    "articles": "Makaloli",
     "services": "Ayyukan",
     "public_services": "Ayyukan Jama'a",
     "explore_nigeria": "Binciko Najeriya",
@@ -60,8 +60,8 @@
     "featured_initiatives_title": "Shirye-shiryen da aka Fifita",
     "view_details_button": "Duba Cikakken Bayani",
     "view_all_projects_button": "Duba Dukkan Ayyuka",
-    "latest_news_title": "Sabbin Labarai & Sabuntawa",
-    "view_all_news_button": "Duba Dukkan Labarai",
+    "latest_news_title": "Sabbin Makaloli & Sabuntawa",
+    "view_all_news_button": "Duba Dukkan Makaloli",
     "popular_services_title": "Ayyukan Gwamnati da suka Shahara",
     "explore_all_services_button": "Binciko Dukkan Ayyukan",
     "featured_videos_title": "Bidiyoyin da aka Fifita",
@@ -106,6 +106,7 @@
     "manage_users": "Sarrafa Masu Amfani",
     "manage_projects": "Sarrafa Ayyuka",
     "manage_news": "Sarrafa Labarai",
+    "manage_opportunities": "Sarrafa Dama",
     "manage_services": "Sarrafa Ayyukan",
     "manage_videos": "Sarrafa Bidiyoyi",
     "manage_feedback": "Sarrafa Ra'ayoyi",

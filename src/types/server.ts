@@ -11,6 +11,7 @@ import type {
   tag,
   ministry,
   state,
+  opportunity as opportunityTable,
 } from '../db/schema';
 
 export type Ministry = InferSelectModel<typeof ministry> & {
@@ -49,20 +50,7 @@ export type Video = InferSelectModel<typeof video> & {
 
 export const videoFormSchemaRaw = {
   title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(200),
-  url: (z: any) => z.string().refine(
-    (url) => {
-      try {
-        // Check if it's a valid URL
-        new URL(url);
-        return true;
-      } catch {
-        // If not a valid URL, check if it's a YouTube URL
-        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)/;
-        return youtubeRegex.test(url);
-      }
-    },
-    "Must be a valid URL or YouTube link."
-  ),
+  url: (z: any) => z.string().url("Must be a valid URL (e.g., from Cloudinary or YouTube embed)."),
   thumbnailUrl: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
   dataAiHint: (z: any) => z.string().max(50, "AI hint for thumbnail too long (max 2 words).").optional().nullable(),
   description: (z: any) => z.string().max(500, "Description too long.").optional().nullable(),
@@ -237,4 +225,32 @@ export type UserDashboardStats = {
   bookmarkedProjects: number;
   bookmarkedNews: number;
   averageRating: number;
+};
+
+export type Opportunity = InferSelectModel<typeof opportunityTable> & {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  category: string;
+  imageUrl: string | null;
+  dataAiHint: string | null;
+  publishedDate: Date;
+  content: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
+
+export const opportunityFormSchemaRaw = {
+  title: (z: any) => z.string().min(5, "Title must be at least 5 characters.").max(200),
+  slug: (z: any) => z.string().min(3, "Slug must be at least 3 characters.").max(200)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens."),
+  summary: (z: any) => z.string().min(10, "Summary must be at least 10 characters.").max(500),
+  category: (z: any) => z.string().min(2, "Category must be at least 2 characters.").max(50),
+  publishedDate: (z: any) => z.coerce.date({ required_error: "Published date is required."}),
+  content: (z: any) => z.string()
+    .min(50, "Content must be at least 50 characters.")
+    .max(12000, "Content must not exceed 12,000 characters."),
+  imageUrl: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
+  dataAiHint: (z: any) => z.string().max(50, "AI hint too long.").optional().nullable(),
 };

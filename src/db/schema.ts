@@ -221,6 +221,24 @@ export const video = mysqlTable('video', {
   updatedAt: datetime('updatedAt').default(sql`NOW()`),
 });
 
+// Opportunity table
+export const opportunity = mysqlTable('opportunity', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  slug: varchar('slug', { length: 255 }).unique().notNull(),
+  title: varchar('title', { length: 255 }).notNull(),
+  summary: text('summary').notNull(),
+  category: varchar('category', { length: 255 }).notNull(),
+  imageUrl: varchar('imageUrl', { length: 255 }),
+  dataAiHint: varchar('dataAiHint', { length: 255 }),
+  publishedDate: datetime('publishedDate').notNull(),
+  content: text('content').notNull(),
+  createdAt: datetime('createdAt').default(sql`NOW()`),
+  updatedAt: datetime('updatedAt').default(sql`NOW()`),
+}, (table) => [
+  index('idx_opportunity_slug').on(table.slug),
+  index('idx_opportunity_category').on(table.category),
+]);
+
 // Sitesetting table
 export const sitesetting = mysqlTable('sitesetting', {
   id: varchar('id', { length: 255 }).primaryKey(),
@@ -272,6 +290,8 @@ export type Service = InferSelectModel<typeof service>;
 export type ServiceInsert = InferInsertModel<typeof service>;
 export type Video = InferSelectModel<typeof video>;
 export type VideoInsert = InferInsertModel<typeof video>;
+export type Opportunity = InferSelectModel<typeof opportunity>;
+export type OpportunityInsert = InferInsertModel<typeof opportunity>;
 export type SiteSetting = InferSelectModel<typeof sitesetting>;
 export type SiteSettingInsert = InferInsertModel<typeof sitesetting>;
 export type BookmarkedProject = InferSelectModel<typeof bookmarkedproject>;

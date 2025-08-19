@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm, SubmitHandler } from "react-hook-form";
@@ -12,41 +11,31 @@ import { useToast } from "@/hooks/use-toast";
 import { addVideo, updateVideo } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { type VideoFormData } from "@/types/client";
-import { videoFormSchemaRaw, type Video } from "@/types/server"
+import { videoFormSchemaRaw, type Video } from "@/types/server";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardDescription } from "@/components/ui/card";
 
-// Function to convert YouTube URL to embed format
+// Convert various YouTube URL formats to the embeddable `/embed/VIDEO_ID` URL
 const convertToEmbedUrl = (url: string): string => {
-  // Handle different YouTube URL formats
-  let videoId = '';
-  
-  // Format: https://www.youtube.com/watch?v=VIDEO_ID
-  const youtubeWatchRegex = /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/;
-  const watchMatch = url.match(youtubeWatchRegex);
-  
-  // Format: https://youtu.be/VIDEO_ID
-  const youtuBeRegex = /youtu\.be\/([a-zA-Z0-9_-]+)/;
-  const shortMatch = url.match(youtuBeRegex);
-  
-  // Format: https://www.youtube.com/embed/VIDEO_ID
-  const embedRegex = /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/;
-  const embedMatch = url.match(embedRegex);
-  
-  if (watchMatch) {
-    videoId = watchMatch[1];
-  } else if (shortMatch) {
-    videoId = shortMatch[1];
-  } else if (embedMatch) {
-    videoId = embedMatch[1];
-  } else {
-    // If no match, return original URL
+  try {
+    // If already an embed URL, return as-is
+    const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+    if (embedMatch) return url;
+
+    // watch?v=VIDEO_ID
+    const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+    if (watchMatch) return `https://www.youtube.com/embed/${watchMatch[1]}`;
+
+    // youtu.be/VIDEO_ID
+    const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+    if (shortMatch) return `https://www.youtube.com/embed/${shortMatch[1]}`;
+
+    // fallback: return original URL
+    return url;
+  } catch {
     return url;
   }
-  
-  // Return embed URL
-  return `https://www.youtube.com/embed/${videoId}`;
 };
 
 const videoSchema = z.object({
@@ -67,22 +56,32 @@ export function VideoForm({ initialData, videoId, onSuccess }: VideoFormProps) {
   const { toast } = useToast();
   const router = useRouter();
   const isEditMode = !!videoId;
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(initialData?.thumbnailUrl || null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
+    initialData?.thumbnailUrl || null
+  );
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm<VideoFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    setValue,
+  } = useForm<VideoFormData>({
     resolver: zodResolver(videoSchema),
-    defaultValues: initialData ? {
-      ...initialData,
-      thumbnailUrl: initialData.thumbnailUrl || "",
-      dataAiHint: initialData.dataAiHint || "",
-      description: initialData.description || "",
-    } : {
-      title: "",
-      url: "",
-      thumbnailUrl: "",
-      dataAiHint: "",
-      description: "",
-    },
+    defaultValues: initialData
+      ? {
+          ...initialData,
+          thumbnailUrl: initialData.thumbnailUrl || "",
+          dataAiHint: initialData.dataAiHint || "",
+          description: initialData.description || "",
+        }
+      : {
+          title: "",
+          url: "",
+          thumbnailUrl: "",
+          dataAiHint: "",
+          description: "",
+        },
   });
 
   useEffect(() => {
@@ -97,7 +96,9 @@ export function VideoForm({ initialData, videoId, onSuccess }: VideoFormProps) {
     }
   }, [initialData, reset]);
 
-  const handleThumbnailFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleThumbnailFileChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -105,15 +106,14 @@ export function VideoForm({ initialData, videoId, onSuccess }: VideoFormProps) {
         setThumbnailPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-      setValue('thumbnailUrl', '');
+      setValue("thumbnailUrl", "");
     } else {
       setThumbnailPreview(initialData?.thumbnailUrl || null);
-      setValue('thumbnailUrl', initialData?.thumbnailUrl || '');
+      setValue("thumbnailUrl", initialData?.thumbnailUrl || "");
     }
   };
 
   const onSubmit: SubmitHandler<VideoFormData> = async (data) => {
-    // Convert YouTube URL to embed format before submitting
     const dataToSubmit = {
       ...data,
       url: convertToEmbedUrl(data.url),
@@ -156,57 +156,114 @@ export function VideoForm({ initialData, videoId, onSuccess }: VideoFormProps) {
       <div>
         <Label htmlFor="title">Video Title</Label>
         <Input id="title" {...register("title")} className="mt-1" />
-        {errors.title && <p className="text-sm text-destructive mt-1">{errors.title.message}</p>}
+        {errors.title && (
+          <p className="text-sm text-destructive mt-1">
+            {errors.title.message}
+          </p>
+        )}
       </div>
 
       <div>
-        <Label htmlFor="url">YouTube Video URL</Label>
-        <Input 
-          id="url" 
-          {...register("url")} 
-          className="mt-1" 
-          placeholder="e.g., https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID" 
+        <Label htmlFor="url">Video Embed URL</Label>
+        <Input
+          id="url"
+          {...register("url")}
+          className="mt-1"
+          placeholder="e.g., https://www.youtube.com/embed/VIDEO_ID"
         />
-        <p className="text-sm text-muted-foreground mt-1">
-          Enter a YouTube video URL. It will be automatically converted to embed format.
-        </p>
-        {errors.url && <p className="text-sm text-destructive mt-1">{errors.url.message}</p>}
+        {errors.url && (
+          <p className="text-sm text-destructive mt-1">{errors.url.message}</p>
+        )}
       </div>
 
-      {/* <Card className="p-4 space-y-3 bg-muted/30">
+      <Card className="p-4 space-y-3 bg-muted/30">
         <Label htmlFor="thumbnailFile">Video Thumbnail (Optional)</Label>
-        <Input id="thumbnailFile" type="file" accept="image/*" onChange={handleThumbnailFileChange} className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+        <Input
+          id="thumbnailFile"
+          type="file"
+          accept="image/*"
+          onChange={handleThumbnailFileChange}
+          className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+        />
         {thumbnailPreview && (
           <div className="mt-2">
             <Label>Thumbnail Preview:</Label>
-            <Image src={thumbnailPreview} alt="Thumbnail Preview" width={200} height={120} className="mt-1 rounded-md border object-cover aspect-video" />
+            <Image
+              src={thumbnailPreview}
+              alt="Thumbnail Preview"
+              width={200}
+              height={120}
+              className="mt-1 rounded-md border object-cover aspect-video"
+            />
           </div>
         )}
         <CardDescription className="text-xs">
-          Select a thumbnail image to preview. Then, upload it and paste the URL into the 'Thumbnail URL' field below.
+          Select a thumbnail image to preview. Then, upload it and paste the URL
+          into the 'Thumbnail URL' field below.
         </CardDescription>
       </Card>
 
       <div>
-        <Label htmlFor="thumbnailUrl">Thumbnail URL (Optional, paste after uploading)</Label>
-        <Input id="thumbnailUrl" {...register("thumbnailUrl")} className="mt-1" placeholder="https://example.com/thumbnail.jpg" />
-        {errors.thumbnailUrl && <p className="text-sm text-destructive mt-1">{errors.thumbnailUrl.message}</p>}
+        <Label htmlFor="thumbnailUrl">
+          Thumbnail URL (Optional, paste after uploading)
+        </Label>
+        <Input
+          id="thumbnailUrl"
+          {...register("thumbnailUrl")}
+          className="mt-1"
+          placeholder="https://example.com/thumbnail.jpg"
+        />
+        {errors.thumbnailUrl && (
+          <p className="text-sm text-destructive mt-1">
+            {errors.thumbnailUrl.message}
+          </p>
+        )}
       </div>
 
       <div>
-        <Label htmlFor="dataAiHint">Thumbnail AI Hint (Optional, max 2 words)</Label>
-        <Input id="dataAiHint" {...register("dataAiHint")} className="mt-1" placeholder="e.g., government building" />
-        {errors.dataAiHint && <p className="text-sm text-destructive mt-1">{errors.dataAiHint.message}</p>}
-      </div> */}
+        <Label htmlFor="dataAiHint">
+          Thumbnail AI Hint (Optional, max 2 words)
+        </Label>
+        <Input
+          id="dataAiHint"
+          {...register("dataAiHint")}
+          className="mt-1"
+          placeholder="e.g., government building"
+        />
+        {errors.dataAiHint && (
+          <p className="text-sm text-destructive mt-1">
+            {errors.dataAiHint.message}
+          </p>
+        )}
+      </div>
 
       <div>
         <Label htmlFor="description">Description (Optional)</Label>
-        <Textarea id="description" {...register("description")} rows={3} className="mt-1" />
-        {errors.description && <p className="text-sm text-destructive mt-1">{errors.description.message}</p>}
+        <Textarea
+          id="description"
+          {...register("description")}
+          rows={3}
+          className="mt-1"
+        />
+        {errors.description && (
+          <p className="text-sm text-destructive mt-1">
+            {errors.description.message}
+          </p>
+        )}
       </div>
 
-      <Button type="submit" className="w-full sm:w-auto button-hover" disabled={isSubmitting}>
-        {isSubmitting ? (isEditMode ? "Updating..." : "Adding...") : (isEditMode ? "Update Video" : "Add Video")}
+      <Button
+        type="submit"
+        className="w-full sm:w-auto button-hover"
+        disabled={isSubmitting}
+      >
+        {isSubmitting
+          ? isEditMode
+            ? "Updating..."
+            : "Adding..."
+          : isEditMode
+            ? "Update Video"
+            : "Add Video"}
       </Button>
     </form>
   );

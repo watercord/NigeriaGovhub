@@ -33,6 +33,9 @@ import {
   type VideoCreationData,
   updateVideoInDb,
   deleteVideoFromDb,
+  createOpportunityInDb as saveOpportunityToDb,
+  updateOpportunityInDb,
+  deleteOpportunityFromDb,
   getSiteSettingsFromDb,
   updateSiteSettingsInDb,
   getUserDashboardStatsFromDb,
@@ -46,11 +49,13 @@ import {
   toggleNewsLikeInDb,
   getUserByEmail,
   // getFullUserByEmail,
+  getOpportunityBySlug as getOpportunityBySlugFromDb,
+  getAllOpportunities as fetchAllOpportunitiesFromDb,
 } from './data';
 import { db } from '../db/drizzle';
-import { cloudinary } from './cloudinary';  
-import { user, project, newsarticle, service, video, verificationToken, passwordResetToken, feedback, ministry, state } from '../db/schema';
-import type { Feedback as AppFeedback, User as AppUser, Project as AppProject, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, Video as AppVideo,  SiteSettings, UserDashboardStats, Project } from '@/types/server';
+import { cloudinary } from './cloudinary';
+import { user, project, newsarticle, service, video, verificationToken, passwordResetToken, feedback, ministry, state, opportunity } from '../db/schema';
+import type { Feedback as AppFeedback, User as AppUser, Project as AppProject, NewsArticle as AppNewsArticle, ServiceItem as AppServiceItem, Video as AppVideo, Opportunity as AppOpportunity, SiteSettings, UserDashboardStats, Project } from '@/types/server';
 import type { SubmitFeedbackResult, DeleteUserResult, CreateUserResult } from '@/types/actions';
 import type {
   NewsArticleFormData,
@@ -350,6 +355,8 @@ export async function getProjectByIdAction(id: string): Promise<AppProject | nul
       .from(feedback)
       .where(eq(feedback.project_id, id));
 
+    if (!feedbackResults || feedbackResults.length === 0) return null;
+
     return {
       ...projectData.project,
       ministry: projectData.ministry || { id: '', name: '' },
@@ -393,11 +400,10 @@ export async function getProjectByIdAction(id: string): Promise<AppProject | nul
         ? Number(projectData.project.expenditure)
         : null,
       feedback: feedbackResults.map(f => ({
-  ...f,
-  created_at: f.created_at ? new Date(f.created_at) : null,
-})),
-
-    };
+        ...f,
+        created_at: f.created_at ? new Date(f.created_at) : null,
+      })),
+    } as AppProject;
   } catch (error) {
     console.error(`Error fetching project by ID ${id}:`, error);
     return null;
@@ -692,6 +698,157 @@ export async function getVideoByIdAction(id: string): Promise<AppVideo | null> {
     return video;
   } catch (error) {
     console.error(`Error in getVideoByIdAction for ID ${id}:`, error);
+    return null;
+  }
+}
+
+export type OpportunityFormData = {
+  title: string;
+  slug: string;
+  summary: string;
+  category: string;
+  publishedDate: Date;
+  content: string;
+  imageUrl?: string | null;
+  dataAiHint?: string | null;
+};
+
+export async function addOpportunity(
+  opportunityData: OpportunityFormData
+): Promise<{ success: boolean; message: string; item?: AppOpportunity; errorDetails?: any }> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== 'admin') {
+      return { success: false, message: 'Unauthorized: Admin access required' };
+    }
+
+    const existingOpportunity = await db
+      .select()
+      .from(opportunity)
+      .where(eq(opportunity.slug, opportunityData.slug))
+      .limit(1);
+
+    if (existingOpportunity.length > 0) {
+      return { success: false, message: `An opportunity with the slug "${opportunityData.slug}" already exists.` };
+    }
+
+    const dataToSave = {
+      title: opportunityData.title,
+      slug: opportunityData.slug,
+      summary: opportunityData.summary,
+      category: opportunityData.category,
+      publishedDate: opportunityData.publishedDate,
+      content: opportunityData.content,
+      imageUrl: opportunityData.imageUrl ?? null,
+      dataAiHint: opportunityData.dataAiHint ?? null,
+    };
+
+    const newOpportunity = await saveOpportunityToDb(dataToSave);
+    if (!newOpportunity) {
+      return { success: false, message: 'Failed to save opportunity to the database.' };
+    }
+
+    revalidatePath('/opportunities');
+    revalidatePath(`/opportunities/${newOpportunity.slug}`);
+    revalidatePath('/dashboard/admin/manage-opportunity');
+    revalidatePath('/');
+    return { success: true, message: 'Opportunity added successfully!', item: newOpportunity };
+  } catch (error) {
+    console.error('Error adding opportunity:', error);
+    let errorMessage = 'An unexpected error occurred while adding the opportunity.';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (error.message.includes('Duplicate entry') && error.message.includes('slug')) {
+        errorMessage = 'An opportunity with this slug already exists.';
+      }
+    }
+    return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
+  }
+}
+
+export async function updateOpportunity(
+  id: string,
+  opportunityData: OpportunityFormData
+): Promise<{ success: boolean; message: string; item?: AppOpportunity; errorDetails?: any }> {
+  try {
+    if (opportunityData.slug) {
+      const existingOpportunity = await db
+        .select()
+        .from(opportunity)
+        .where(and(eq(opportunity.slug, opportunityData.slug), ne(opportunity.id, id)))
+        .limit(1);
+
+      if (existingOpportunity.length > 0) {
+        return { success: false, message: `Another opportunity with the slug "${opportunityData.slug}" already exists.` };
+      }
+    }
+
+    const dataToUpdate = {
+      title: opportunityData.title,
+      slug: opportunityData.slug,
+      summary: opportunityData.summary,
+      category: opportunityData.category,
+      publishedDate: opportunityData.publishedDate,
+      content: opportunityData.content,
+      imageUrl: opportunityData.imageUrl,
+      dataAiHint: opportunityData.dataAiHint,
+    };
+
+    const updatedOpportunity = await updateOpportunityInDb(id, dataToUpdate);
+    if (!updatedOpportunity) {
+      return { success: false, message: 'Failed to update opportunity in the database.' };
+    }
+
+    revalidatePath('/opportunities');
+    revalidatePath(`/opportunities/${updatedOpportunity.slug}`);
+    revalidatePath('/dashboard/admin/manage-opportunity');
+    revalidatePath('/');
+    return { success: true, message: 'Opportunity updated successfully!', item: updatedOpportunity };
+  } catch (error) {
+    console.error('Error updating opportunity:', error);
+    let errorMessage = 'An unexpected error occurred while updating the opportunity.';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      if (error.message.includes('Duplicate entry') && error.message.includes('slug')) {
+        errorMessage = 'An opportunity with this slug already exists.';
+      }
+    }
+    return { success: false, message: errorMessage, errorDetails: error instanceof Error ? error.stack : undefined };
+  }
+}
+
+export async function deleteOpportunity(id: string): Promise<{ success: boolean; message: string; errorDetails?: any }> {
+  try {
+    const success = await deleteOpportunityFromDb(id);
+    if (!success) {
+      return { success: false, message: 'Failed to delete opportunity from the database.' };
+    }
+
+    revalidatePath('/opportunities');
+    revalidatePath('/dashboard/admin/manage-opportunity');
+    revalidatePath('/');
+    return { success: true, message: 'Opportunity deleted successfully!' };
+  } catch (error) {
+    console.error('Error deleting opportunity:', error);
+    return { success: false, message: 'An unexpected error occurred while deleting the opportunity.', errorDetails: error instanceof Error ? error.stack : undefined };
+  }
+}
+
+export async function fetchAllOpportunitiesAction(): Promise<AppOpportunity[]> {
+  try {
+    return await fetchAllOpportunitiesFromDb();
+  } catch (error) {
+    console.error("Error fetching all opportunities in action:", error);
+    throw new Error("Failed to fetch opportunities via action.");
+  }
+}
+
+export async function getOpportunityBySlugAction(slug: string): Promise<AppOpportunity | null> {
+  try {
+    const opportunity = await getOpportunityBySlugFromDb(slug);
+    return opportunity;
+  } catch (error) {
+    console.error(`Error in getOpportunityBySlugAction for slug ${slug}:`, error);
     return null;
   }
 }
@@ -1045,6 +1202,8 @@ export async function toggleNewsBookmarkAction(articleId: string): Promise<{ suc
     return { success: false, message: "An unexpected error occurred." };
   }
 }
+
+
 
 export async function addNewsCommentAction({ articleId, content }: { articleId: string; content: string }) {
   try {

@@ -1,20 +1,52 @@
-"use server"
+"use server";
 
-import type * as LucideIcons from 'lucide-react';
-import type { Ministry, State, Project, Feedback, ImpactStat, Video, User, NewsArticle, ServiceItem, SiteSettings, UserDashboardStats, NewsComment } from '@/types/server';
-import { v4 as uuidv4 } from 'uuid';
-import { db } from '../db/drizzle';
-import { user, project, feedback, newsarticle, newscomment, newslike, bookmarkednewsarticle, bookmarkedproject, service, video, sitesetting, projecttag, tag, account, session } from '../db/schema';
-import * as relations from '../db/relations';
-import { eq, and, sql, isNotNull, desc, asc } from 'drizzle-orm';
-import { InferSelectModel } from 'drizzle-orm';
-import { ministries, states } from './mock-data';
+import type * as LucideIcons from "lucide-react";
+import type {
+  Ministry,
+  State,
+  Project,
+  Feedback,
+  ImpactStat,
+  Video,
+  User,
+  NewsArticle,
+  ServiceItem,
+  SiteSettings,
+  UserDashboardStats,
+  NewsComment,
+} from "@/types/server";
+import { v4 as uuidv4 } from "uuid";
+import { db } from "../db/drizzle";
+import {
+  user,
+  project,
+  feedback,
+  newsarticle,
+  newscomment,
+  newslike,
+  bookmarkednewsarticle,
+  bookmarkedproject,
+  service,
+  video,
+  sitesetting,
+  projecttag,
+  tag,
+  account,
+  session,
+  opportunity,
+} from "../db/schema";
+import * as relations from "../db/relations";
+import { eq, and, sql, isNotNull, desc, asc } from "drizzle-orm";
+import { InferSelectModel } from "drizzle-orm";
+import { ministries, states } from "./mock-data";
 
 // --- Mock Data for Ministries and States ---
 
-
 // --- Helper function to parse JSON fields safely ---
-function safeParseJsonArray<T>(input: string | null | undefined, fallback: T[]): T[] {
+function safeParseJsonArray<T>(
+  input: string | null | undefined,
+  fallback: T[]
+): T[] {
   if (!input) return fallback;
   try {
     const parsed = JSON.parse(input);
@@ -27,42 +59,57 @@ function safeParseJsonArray<T>(input: string | null | undefined, fallback: T[]):
 // --- Helper function to map Drizzle Project to Project ---
 const mapPrismaProjectToAppProject = (
   drizzleProject: InferSelectModel<typeof project> & {
-    feedback?: (InferSelectModel<typeof feedback> & { user?: InferSelectModel<typeof user> | null })[];
+    feedback?: (InferSelectModel<typeof feedback> & {
+      user?: InferSelectModel<typeof user> | null;
+    })[];
     projectTags?: { tag: InferSelectModel<typeof tag> }[];
   }
-): Project => {
-  const images = safeParseJsonArray<{ url: string; alt: string; dataAiHint?: string }>(
-    drizzleProject.images,
+) => {
+  const images: { url: string; alt: string; dataAiHint?: string }[] =
+    safeParseJsonArray<{ url: string; alt: string; dataAiHint?: string }>(
+      drizzleProject.images,
+      []
+    ).map((img) => ({
+      url: img.url || "",
+      alt: img.alt || "",
+      dataAiHint: img.dataAiHint,
+    }));
+
+  const videos = safeParseJsonArray<Video>(drizzleProject.videos, []).map(
+    (video) => ({
+      id: video.id || "",
+      title: video.title || "",
+      url: video.url || "",
+      thumbnailUrl: video.thumbnailUrl || null,
+      dataAiHint: video.dataAiHint || null,
+      description: video.description || null,
+      createdAt: video.createdAt ? new Date(video.createdAt) : null,
+      updatedAt: video.updatedAt ? new Date(video.updatedAt) : null,
+    })
+  ) as Video[];
+
+  const impactStats = safeParseJsonArray<ImpactStat>(
+    drizzleProject.impact_stats,
     []
-  ).map((img) => ({
-    url: img.url || '',
-    alt: img.alt || '',
-    dataAiHint: img.dataAiHint,
-  })) as { url: string; alt: string; dataAiHint?: string }[];
-
-  const videos = safeParseJsonArray<Video>(drizzleProject.videos, []).map((video) => ({
-    id: video.id || '',
-    title: video.title || '',
-    url: video.url || '',
-    thumbnailUrl: video.thumbnailUrl || null,
-    dataAiHint: video.dataAiHint || null,
-    description: video.description || null,
-    createdAt: video.createdAt ? new Date(video.createdAt) : null,
-    updatedAt: video.updatedAt ? new Date(video.updatedAt) : null,
-  })) as Video[];
-
-  const impactStats = safeParseJsonArray<ImpactStat>(drizzleProject.impact_stats, []).map((stat) => ({
-    label: stat.label || '',
-    value: stat.value || '',
+  ).map((stat) => ({
+    label: stat.label || "",
+    value: stat.value || "",
   })) as ImpactStat[];
 
   const ministry = drizzleProject.ministry_id
-    ? ministries.find((m) => m.id === drizzleProject.ministry_id) || { id: '', name: 'Unknown Ministry' }
-    : { id: '', name: 'Unknown Ministry' };
+    ? ministries.find((m) => m.id === drizzleProject.ministry_id) || {
+        id: "",
+        name: "Unknown Ministry",
+      }
+    : { id: "", name: "Unknown Ministry" };
 
   const state = drizzleProject.state_id
-    ? states.find((s) => s.id === drizzleProject.state_id) || { id: '', name: 'Unknown State', capital: null }
-    : { id: '', name: 'Unknown State', capital: null };
+    ? states.find((s) => s.id === drizzleProject.state_id) || {
+        id: "",
+        name: "Unknown State",
+        capital: null,
+      }
+    : { id: "", name: "Unknown State", capital: null };
 
   return {
     id: drizzleProject.id,
@@ -70,26 +117,50 @@ const mapPrismaProjectToAppProject = (
     subtitle: drizzleProject.subtitle,
     ministry_id: drizzleProject.ministry_id,
     state_id: drizzleProject.state_id,
-    status: drizzleProject.status as 'Planned' | 'Ongoing' | 'Completed' | 'On Hold',
+    status: drizzleProject.status as
+      | "Planned"
+      | "Ongoing"
+      | "Completed"
+      | "On Hold",
     startDate: new Date(drizzleProject.start_date),
-    expectedEndDate: drizzleProject.expected_end_date ? new Date(drizzleProject.expected_end_date) : null,
-    actualEndDate: drizzleProject.actual_end_date ? new Date(drizzleProject.actual_end_date) : null,
+    expectedEndDate: drizzleProject.expected_end_date
+      ? new Date(drizzleProject.expected_end_date)
+      : null,
+    actualEndDate: drizzleProject.actual_end_date
+      ? new Date(drizzleProject.actual_end_date)
+      : null,
     description: drizzleProject.description,
-    images,
+    images: Array.isArray(images) ? images : [],
     impactStats,
-    budget: drizzleProject.budget !== null ? Number(drizzleProject.budget) : null,
-    expenditure: drizzleProject.expenditure !== null ? Number(drizzleProject.expenditure) : undefined,
-    lastUpdatedAt: drizzleProject.last_updated_at ? new Date(drizzleProject.last_updated_at) : null,
+    budget:
+      drizzleProject.budget !== null &&
+      drizzleProject.budget !== undefined &&
+      !isNaN(Number(drizzleProject.budget))
+        ? Number(drizzleProject.budget)
+        : null,
+    expenditure:
+      drizzleProject.expenditure !== null &&
+      drizzleProject.expenditure !== undefined &&
+      !isNaN(Number(drizzleProject.expenditure))
+        ? Number(drizzleProject.expenditure)
+        : null,
+    lastUpdatedAt: drizzleProject.last_updated_at
+      ? new Date(drizzleProject.last_updated_at)
+      : null,
     tags: drizzleProject.projectTags?.map((pt) => pt.tag.name) || [],
-    feedback: drizzleProject.feedback?.map((f) => mapPrismaFeedbackToAppFeedback(f)) || [],
+    feedback:
+      drizzleProject.feedback?.map((f) => mapPrismaFeedbackToAppFeedback(f)) ||
+      [],
     ministry,
     state,
-  };
+  } as Project;
 };
 
 // --- Helper function to map Drizzle Feedback to Feedback ---
 const mapPrismaFeedbackToAppFeedback = (
-  drizzleFeedback: InferSelectModel<typeof feedback> & { user?: InferSelectModel<typeof user> | null }
+  drizzleFeedback: InferSelectModel<typeof feedback> & {
+    user?: InferSelectModel<typeof user> | null;
+  }
 ): Feedback => {
   return {
     id: drizzleFeedback.id,
@@ -99,28 +170,42 @@ const mapPrismaFeedbackToAppFeedback = (
     comment: drizzleFeedback.comment,
     rating: drizzleFeedback.rating,
     sentiment_summary: drizzleFeedback.sentiment_summary,
-    created_at: drizzleFeedback.created_at ? new Date(drizzleFeedback.created_at) : null,
-    user: drizzleFeedback.user ? mapPrismaUserToAppUser(drizzleFeedback.user) : null,
+    created_at: drizzleFeedback.created_at
+      ? new Date(drizzleFeedback.created_at)
+      : null,
+    user: drizzleFeedback.user
+      ? mapPrismaUserToAppUser(drizzleFeedback.user)
+      : null,
   };
 };
 
 // --- Helper function to map Drizzle User to User ---
-const mapPrismaUserToAppUser = (drizzleUser: InferSelectModel<typeof user>): User => {
+const mapPrismaUserToAppUser = (
+  drizzleUser: InferSelectModel<typeof user>
+): User => {
   return {
     id: drizzleUser.id,
     name: drizzleUser.name,
     email: drizzleUser.email,
-    emailVerified: drizzleUser.emailVerified ? new Date(drizzleUser.emailVerified) : null,
+    emailVerified: drizzleUser.emailVerified
+      ? new Date(drizzleUser.emailVerified)
+      : null,
     image: drizzleUser.image,
-    role: drizzleUser.role as 'user' | 'admin' | null,
-    created_at: drizzleUser.created_at ? new Date(drizzleUser.created_at) : null,
+    role: drizzleUser.role as "user" | "admin" | null,
+    created_at: drizzleUser.created_at
+      ? new Date(drizzleUser.created_at)
+      : null,
     password: drizzleUser.password,
-    updated_at: drizzleUser.updated_at ? new Date(drizzleUser.updated_at) : null,
+    updated_at: drizzleUser.updated_at
+      ? new Date(drizzleUser.updated_at)
+      : null,
   };
 };
 
 // --- Helper function to map Drizzle NewsArticle to NewsArticle ---
-const mapPrismaNewsToAppNews = (drizzleNews: InferSelectModel<typeof newsarticle>): Omit<NewsArticle, 'comments' | 'likeCount' | 'isLikedByUser'> => {
+const mapPrismaNewsToAppNews = (
+  drizzleNews: InferSelectModel<typeof newsarticle>
+): Omit<NewsArticle, "comments" | "likeCount" | "isLikedByUser"> => {
   return {
     id: drizzleNews.id,
     slug: drizzleNews.slug,
@@ -137,7 +222,9 @@ const mapPrismaNewsToAppNews = (drizzleNews: InferSelectModel<typeof newsarticle
 };
 
 // --- Helper function to map Drizzle Service to ServiceItem ---
-const mapPrismaServiceToAppServiceItem = (drizzleService: InferSelectModel<typeof service>): ServiceItem => {
+const mapPrismaServiceToAppServiceItem = (
+  drizzleService: InferSelectModel<typeof service>
+): ServiceItem => {
   return {
     id: drizzleService.id,
     slug: drizzleService.slug,
@@ -148,13 +235,19 @@ const mapPrismaServiceToAppServiceItem = (drizzleService: InferSelectModel<typeo
     imageUrl: drizzleService.imageUrl,
     dataAiHint: drizzleService.dataAiHint,
     iconName: drizzleService.iconName as keyof typeof LucideIcons | null,
-    createdAt: drizzleService.createdAt ? new Date(drizzleService.createdAt) : null,
-    updatedAt: drizzleService.updatedAt ? new Date(drizzleService.updatedAt) : null,
+    createdAt: drizzleService.createdAt
+      ? new Date(drizzleService.createdAt)
+      : null,
+    updatedAt: drizzleService.updatedAt
+      ? new Date(drizzleService.updatedAt)
+      : null,
   };
 };
 
 // --- Helper function to map Drizzle Video to Video ---
-const mapPrismaVideoToAppVideo = (drizzleVideo: InferSelectModel<typeof video>): Video => {
+const mapPrismaVideoToAppVideo = (
+  drizzleVideo: InferSelectModel<typeof video>
+): Video => {
   return {
     id: drizzleVideo.id,
     title: drizzleVideo.title,
@@ -168,14 +261,18 @@ const mapPrismaVideoToAppVideo = (drizzleVideo: InferSelectModel<typeof video>):
 };
 
 // --- Helper function to map Drizzle SiteSetting to SiteSettings ---
-const mapPrismaSiteSettingToAppSiteSetting = (drizzleSetting: InferSelectModel<typeof sitesetting>): SiteSettings => {
+const mapPrismaSiteSettingToAppSiteSetting = (
+  drizzleSetting: InferSelectModel<typeof sitesetting>
+): SiteSettings => {
   return {
     id: drizzleSetting.id,
     siteName: drizzleSetting.siteName,
     maintenanceMode: drizzleSetting.maintenanceMode,
     contactEmail: drizzleSetting.contactEmail,
     footerMessage: drizzleSetting.footerMessage,
-    updatedAt: drizzleSetting.updatedAt ? new Date(drizzleSetting.updatedAt) : null,
+    updatedAt: drizzleSetting.updatedAt
+      ? new Date(drizzleSetting.updatedAt)
+      : null,
   };
 };
 
@@ -195,7 +292,7 @@ export const getProjectById = async (id: string): Promise<Project | null> => {
     if (!projectWithDetails) return null;
     return mapPrismaProjectToAppProject(projectWithDetails);
   } catch (error) {
-    console.error('Error fetching project by ID with Drizzle:', error);
+    console.error("Error fetching project by ID with Drizzle:", error);
     throw error;
   }
 };
@@ -214,7 +311,7 @@ export const getAllProjects = async (): Promise<Project[]> => {
     });
     return drizzleProjects.map(mapPrismaProjectToAppProject);
   } catch (error) {
-    console.error('Error fetching all projects with Drizzle:', error);
+    console.error("Error fetching all projects with Drizzle:", error);
     return [];
   }
 };
@@ -224,7 +321,7 @@ export type ProjectCreationData = {
   subtitle: string;
   ministry_id: string | null;
   state_id: string | null;
-  status: 'Ongoing' | 'Completed' | 'Planned' | 'On Hold';
+  status: "Ongoing" | "Completed" | "Planned" | "On Hold";
   start_date: Date;
   expected_end_date?: Date | null;
   description: string;
@@ -236,55 +333,78 @@ export type ProjectCreationData = {
   impact_stats?: ImpactStat[];
 };
 
-export const createProjectInDb = async (projectData: ProjectCreationData): Promise<Project | null> => {
+export const createProjectInDb = async (
+  projectData: ProjectCreationData
+): Promise<Project | null> => {
   try {
-    console.log('[createProjectInDb] Starting with data:', projectData);
+    console.log("[createProjectInDb] Starting with data:", projectData);
     // Validate ministry_id and state_id against mock data
-    if (projectData.ministry_id && !ministries.find(m => m.id === projectData.ministry_id)) {
+    if (
+      projectData.ministry_id &&
+      !ministries.find((m) => m.id === projectData.ministry_id)
+    ) {
       throw new Error(`Invalid ministry_id: ${projectData.ministry_id}`);
     }
-    if (projectData.state_id && !states.find(s => s.id === projectData.state_id)) {
+    if (
+      projectData.state_id &&
+      !states.find((s) => s.id === projectData.state_id)
+    ) {
       throw new Error(`Invalid state_id: ${projectData.state_id}`);
     }
 
     const { tags, images, videos, impact_stats, ...scalarData } = projectData;
     const newProjectId = uuidv4();
-    console.log('[createProjectInDb] New project ID:', newProjectId);
+    console.log("[createProjectInDb] New project ID:", newProjectId);
     await db.transaction(async (tx) => {
-      console.log('[createProjectInDb] Starting transaction');
+      console.log("[createProjectInDb] Starting transaction");
       await tx.insert(project).values({
         ...scalarData,
         id: newProjectId,
         last_updated_at: new Date(),
         created_at: new Date(),
         start_date: new Date(scalarData.start_date),
-        expected_end_date: scalarData.expected_end_date ? new Date(scalarData.expected_end_date) : null,
+        expected_end_date: scalarData.expected_end_date
+          ? new Date(scalarData.expected_end_date)
+          : null,
         budget: scalarData.budget != null ? String(scalarData.budget) : null,
-        expenditure: scalarData.expenditure != null ? String(scalarData.expenditure) : null,
+        expenditure:
+          scalarData.expenditure != null
+            ? String(scalarData.expenditure)
+            : null,
         images: images ? JSON.stringify(images) : null,
         videos: videos ? JSON.stringify(videos) : null,
         impact_stats: impact_stats ? JSON.stringify(impact_stats) : null,
       });
-      console.log('[createProjectInDb] Inserted project');
+      console.log("[createProjectInDb] Inserted project");
 
       if (tags && tags.length > 0) {
         const uniqueTags = [...new Set(tags)];
-        console.log('[createProjectInDb] Processing tags:', uniqueTags);
+        console.log("[createProjectInDb] Processing tags:", uniqueTags);
         for (const tagName of uniqueTags) {
-          let tagRecord = await tx.select().from(tag).where(eq(tag.name, tagName)).limit(1).then(res => res[0]);
+          let tagRecord = await tx
+            .select()
+            .from(tag)
+            .where(eq(tag.name, tagName))
+            .limit(1)
+            .then((res) => res[0]);
           if (!tagRecord) {
             await tx.insert(tag).values({ name: tagName });
-            tagRecord = await tx.select().from(tag).where(eq(tag.name, tagName)).limit(1).then(res => res[0]);
-            console.log('[createProjectInDb] Created tag:', tagName);
+            tagRecord = await tx
+              .select()
+              .from(tag)
+              .where(eq(tag.name, tagName))
+              .limit(1)
+              .then((res) => res[0]);
+            console.log("[createProjectInDb] Created tag:", tagName);
           }
           await tx.insert(projecttag).values({
             projectId: newProjectId,
             tagId: tagRecord.id,
           });
-          console.log('[createProjectInDb] Linked tag:', tagName);
+          console.log("[createProjectInDb] Linked tag:", tagName);
         }
       }
-      console.log('[createProjectInDb] Transaction completed');
+      console.log("[createProjectInDb] Transaction completed");
     });
 
     const newProject = await db.query.project.findFirst({
@@ -295,21 +415,30 @@ export const createProjectInDb = async (projectData: ProjectCreationData): Promi
       },
     });
 
-    console.log('[createProjectInDb] Retrieved new project:', newProject);
+    console.log("[createProjectInDb] Retrieved new project:", newProject);
     return newProject ? mapPrismaProjectToAppProject(newProject) : null;
   } catch (error) {
-    console.error('[createProjectInDb] Error:', error);
+    console.error("[createProjectInDb] Error:", error);
     throw error;
   }
 };
 
-export const updateProjectInDb = async (id: string, projectData: Partial<ProjectCreationData>): Promise<Project | null> => {
+export const updateProjectInDb = async (
+  id: string,
+  projectData: Partial<ProjectCreationData>
+): Promise<Project | null> => {
   try {
     // Validate ministry_id and state_id against mock data
-    if (projectData.ministry_id && !ministries.find(m => m.id === projectData.ministry_id)) {
+    if (
+      projectData.ministry_id &&
+      !ministries.find((m) => m.id === projectData.ministry_id)
+    ) {
       throw new Error(`Invalid ministry_id: ${projectData.ministry_id}`);
     }
-    if (projectData.state_id && !states.find(s => s.id === projectData.state_id)) {
+    if (
+      projectData.state_id &&
+      !states.find((s) => s.id === projectData.state_id)
+    ) {
       throw new Error(`Invalid state_id: ${projectData.state_id}`);
     }
 
@@ -317,13 +446,25 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
 
     const baseUpdateData = {
       ...scalarData,
-      start_date: scalarData.start_date ? new Date(scalarData.start_date) : undefined,
-      expected_end_date: scalarData.expected_end_date === null ? null : scalarData.expected_end_date ? new Date(scalarData.expected_end_date) : undefined,
-      budget: scalarData.budget !== undefined ? String(scalarData.budget) : undefined,
-      expenditure: scalarData.expenditure !== undefined ? String(scalarData.expenditure) : undefined,
+      start_date: scalarData.start_date
+        ? new Date(scalarData.start_date)
+        : undefined,
+      expected_end_date:
+        scalarData.expected_end_date === null
+          ? null
+          : scalarData.expected_end_date
+            ? new Date(scalarData.expected_end_date)
+            : undefined,
+      budget:
+        scalarData.budget !== undefined ? String(scalarData.budget) : undefined,
+      expenditure:
+        scalarData.expenditure !== undefined
+          ? String(scalarData.expenditure)
+          : undefined,
       images: images !== undefined ? JSON.stringify(images) : undefined,
       videos: videos !== undefined ? JSON.stringify(videos) : undefined,
-      impact_stats: impact_stats !== undefined ? JSON.stringify(impact_stats) : undefined,
+      impact_stats:
+        impact_stats !== undefined ? JSON.stringify(impact_stats) : undefined,
       last_updated_at: new Date(),
     };
 
@@ -333,10 +474,20 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
         if (tags.length > 0) {
           const uniqueTags = [...new Set(tags)];
           for (const tagName of uniqueTags) {
-            let tagRecord = await tx.select().from(tag).where(eq(tag.name, tagName)).limit(1).then(res => res[0]);
+            let tagRecord = await tx
+              .select()
+              .from(tag)
+              .where(eq(tag.name, tagName))
+              .limit(1)
+              .then((res) => res[0]);
             if (!tagRecord) {
               await tx.insert(tag).values({ name: tagName });
-              tagRecord = await tx.select().from(tag).where(eq(tag.name, tagName)).limit(1).then(res => res[0]);
+              tagRecord = await tx
+                .select()
+                .from(tag)
+                .where(eq(tag.name, tagName))
+                .limit(1)
+                .then((res) => res[0]);
             }
             await tx.insert(projecttag).values({
               projectId: id,
@@ -362,7 +513,10 @@ export const updateProjectInDb = async (id: string, projectData: Partial<Project
 
     return updatedProject ? mapPrismaProjectToAppProject(updatedProject) : null;
   } catch (error) {
-    console.error(`Error updating project with ID "${id}" in DB with Drizzle:`, error);
+    console.error(
+      `Error updating project with ID "${id}" in DB with Drizzle:`,
+      error
+    );
     throw error;
   }
 };
@@ -372,12 +526,17 @@ export const deleteProjectFromDb = async (id: string): Promise<boolean> => {
     await db.transaction(async (tx) => {
       await tx.delete(projecttag).where(eq(projecttag.projectId, id));
       await tx.delete(feedback).where(eq(feedback.project_id, id));
-      await tx.delete(bookmarkedproject).where(eq(bookmarkedproject.project_id, id));
+      await tx
+        .delete(bookmarkedproject)
+        .where(eq(bookmarkedproject.project_id, id));
       await tx.delete(project).where(eq(project.id, id));
     });
     return true;
   } catch (error) {
-    console.error(`Error deleting project with ID "${id}" from DB with Drizzle:`, error);
+    console.error(
+      `Error deleting project with ID "${id}" from DB with Drizzle:`,
+      error
+    );
     return false;
   }
 };
@@ -385,7 +544,13 @@ export const deleteProjectFromDb = async (id: string): Promise<boolean> => {
 // --- Feedback Data Functions ---
 export const addFeedbackToProject = async (
   projectId: string,
-  feedbackData: { userName: string; comment: string; rating?: number | null; sentimentSummary?: string | null; userId?: string | null }
+  feedbackData: {
+    userName: string;
+    comment: string;
+    rating?: number | null;
+    sentimentSummary?: string | null;
+    userId?: string | null;
+  }
 ): Promise<Feedback | null> => {
   try {
     const newFeedbackId = uuidv4();
@@ -399,15 +564,24 @@ export const addFeedbackToProject = async (
       user_id: feedbackData.userId ?? null,
       created_at: new Date(),
     });
-    const savedFeedback = await db.select().from(feedback).where(eq(feedback.id, newFeedbackId)).limit(1).then(res => res[0]);
-    return savedFeedback ? mapPrismaFeedbackToAppFeedback({ ...savedFeedback, user: null }) : null;
+    const savedFeedback = await db
+      .select()
+      .from(feedback)
+      .where(eq(feedback.id, newFeedbackId))
+      .limit(1)
+      .then((res) => res[0]);
+    return savedFeedback
+      ? mapPrismaFeedbackToAppFeedback({ ...savedFeedback, user: null })
+      : null;
   } catch (error) {
-    console.error('Error adding feedback to project with Drizzle:', error);
+    console.error("Error adding feedback to project with Drizzle:", error);
     return null;
   }
 };
 
-export const getAllFeedbackWithProjectTitles = async (): Promise<Array<Feedback & { projectTitle: string }>> => {
+export const getAllFeedbackWithProjectTitles = async (): Promise<
+  Array<Feedback & { projectTitle: string }>
+> => {
   try {
     const feedbackWithProjects = await db.query.feedback.findMany({
       with: {
@@ -419,12 +593,15 @@ export const getAllFeedbackWithProjectTitles = async (): Promise<Array<Feedback 
       orderBy: [desc(feedback.created_at)],
     });
 
-    return feedbackWithProjects.map(fb => ({
+    return feedbackWithProjects.map((fb) => ({
       ...mapPrismaFeedbackToAppFeedback({ ...fb, user: fb.user || null }),
-      projectTitle: fb.project?.title || 'Unknown Project',
+      projectTitle: fb.project?.title || "Unknown Project",
     }));
   } catch (error) {
-    console.error('Error fetching all feedback with project titles using Drizzle:', error);
+    console.error(
+      "Error fetching all feedback with project titles using Drizzle:",
+      error
+    );
     return [];
   }
 };
@@ -435,62 +612,100 @@ export async function getUsers(): Promise<User[]> {
     const users = await db.select().from(user).orderBy(desc(user.created_at));
     return users.map(mapPrismaUserToAppUser);
   } catch (error) {
-    console.error('Error fetching users with Drizzle:', error);
+    console.error("Error fetching users with Drizzle:", error);
     return [];
   }
-};
+}
 
-export async function deleteUserById(userId: string): Promise<{ success: boolean; error?: any }> {
+export async function deleteUserById(
+  userId: string
+): Promise<{ success: boolean; error?: any }> {
   try {
     await db.transaction(async (tx) => {
       await tx.delete(newscomment).where(eq(newscomment.user_id, userId));
       await tx.delete(newslike).where(eq(newslike.user_id, userId));
-      await tx.delete(bookmarkednewsarticle).where(eq(bookmarkednewsarticle.user_id, userId));
-      await tx.delete(bookmarkedproject).where(eq(bookmarkedproject.user_id, userId));
+      await tx
+        .delete(bookmarkednewsarticle)
+        .where(eq(bookmarkednewsarticle.user_id, userId));
+      await tx
+        .delete(bookmarkedproject)
+        .where(eq(bookmarkedproject.user_id, userId));
       await tx.delete(account).where(eq(account.userId, userId));
       await tx.delete(session).where(eq(session.userId, userId));
-      await tx.update(feedback).set({ user_id: null }).where(eq(feedback.user_id, userId));
+      await tx
+        .update(feedback)
+        .set({ user_id: null })
+        .where(eq(feedback.user_id, userId));
       await tx.delete(user).where(eq(user.id, userId));
     });
     return { success: true };
   } catch (error) {
-    console.error('Error deleting user profile and related data with Drizzle:', error);
+    console.error(
+      "Error deleting user profile and related data with Drizzle:",
+      error
+    );
     return { success: false, error };
   }
-};
+}
 
-export async function getUserProfileFromDb(userId: string): Promise<User | null> {
+export async function getUserProfileFromDb(
+  userId: string
+): Promise<User | null> {
   try {
-    const [userRecord] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+    const [userRecord] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1);
     return userRecord ? mapPrismaUserToAppUser(userRecord) : null;
   } catch (error) {
-    console.error(`Error fetching profile for user ${userId} from DB with Drizzle:`, error);
+    console.error(
+      `Error fetching profile for user ${userId} from DB with Drizzle:`,
+      error
+    );
     return null;
   }
-};
+}
 
 export async function getUserByEmail(email: string): Promise<User | null> {
   try {
-    const [userRecord] = await db.select().from(user).where(eq(user.email, email)).limit(1);
+    const [userRecord] = await db
+      .select()
+      .from(user)
+      .where(eq(user.email, email))
+      .limit(1);
     return userRecord ? mapPrismaUserToAppUser(userRecord) : null;
   } catch (error) {
-    console.error(`Error fetching user by email ${email} from DB with Drizzle:`, error);
+    console.error(
+      `Error fetching user by email ${email} from DB with Drizzle:`,
+      error
+    );
     throw error;
   }
-};
+}
 
 export const getFullUserByEmail = async (email: string) => {
   try {
-    const [userRecord] = await db.select().from(user).where(eq(user.email, email)).limit(1);
+    const [userRecord] = await db
+      .select()
+      .from(user)
+      .where(eq(user.email, email))
+      .limit(1);
     return userRecord ? mapPrismaUserToAppUser(userRecord) : null;
   } catch (error) {
-    console.error(`Error fetching user by email ${email} from DB with Drizzle:`, error);
+    console.error(
+      `Error fetching user by email ${email} from DB with Drizzle:`,
+      error
+    );
     return null;
   }
 };
 
 // --- News Data Functions ---
-export type NewsArticleCreationData = Omit<InferSelectModel<typeof newsarticle>, 'id' | 'createdAt' | 'updatedAt'>;
+export type NewsArticleCreationData = Omit<
+  InferSelectModel<typeof newsarticle>,
+  "id" | "createdAt" | "updatedAt"
+>;
 export type ServiceCreationData = {
   slug: string;
   title: string;
@@ -501,11 +716,19 @@ export type ServiceCreationData = {
   dataAiHint: string | null;
   iconName: string | null;
 };
-export type VideoCreationData = Omit<InferSelectModel<typeof video>, 'id' | 'createdAt' | 'updatedAt'>;
+export type VideoCreationData = Omit<
+  InferSelectModel<typeof video>,
+  "id" | "createdAt" | "updatedAt"
+>;
 
-export const getNewsArticleBySlug = async (slug: string, userId?: string): Promise<NewsArticle | null> => {
+export const getNewsArticleBySlug = async (
+  slug: string,
+  userId?: string
+): Promise<NewsArticle | null> => {
   try {
-    console.log(`[getNewsArticleBySlug] Fetching article with slug: ${slug}, userId: ${userId || "none"}`);
+    console.log(
+      `[getNewsArticleBySlug] Fetching article with slug: ${slug}, userId: ${userId || "none"}`
+    );
 
     // Step 1: Fetch the article
     const newsArticle = await db
@@ -528,7 +751,9 @@ export const getNewsArticleBySlug = async (slug: string, userId?: string): Promi
       .then((res) => res[0]);
 
     if (!newsArticle) {
-      console.log(`[getNewsArticleBySlug] No article found for slug: "${slug}"`);
+      console.log(
+        `[getNewsArticleBySlug] No article found for slug: "${slug}"`
+      );
       return null;
     }
 
@@ -565,7 +790,12 @@ export const getNewsArticleBySlug = async (slug: string, userId?: string): Promi
       const like = await db
         .select()
         .from(newslike)
-        .where(and(eq(newslike.user_id, userId), eq(newslike.news_article_id, newsArticle.id)))
+        .where(
+          and(
+            eq(newslike.user_id, userId),
+            eq(newslike.news_article_id, newsArticle.id)
+          )
+        )
         .limit(1);
       isLiked = like.length > 0;
       console.log(`[getNewsArticleBySlug] Is liked by user: ${isLiked}`);
@@ -580,27 +810,42 @@ export const getNewsArticleBySlug = async (slug: string, userId?: string): Promi
         content: c.content,
         createdAt: c.createdAt ? new Date(c.createdAt) : null,
         user: c.userId
-          ? { id: c.userId, name: c.userName || "Anonymous", image: c.userImage }
+          ? {
+              id: c.userId,
+              name: c.userName || "Anonymous",
+              image: c.userImage,
+            }
           : { id: "", name: "Anonymous", image: null },
       })),
     };
 
-    console.log(`[getNewsArticleBySlug] Successfully fetched article: ${result.title}`);
+    console.log(
+      `[getNewsArticleBySlug] Successfully fetched article: ${result.title}`
+    );
     return result;
   } catch (error: any) {
-    console.error(`[getNewsArticleBySlug] Error fetching news article by slug "${slug}" with Drizzle:`, {
-      message: error.message,
-      code: error.code,
-      sql: error.sql,
-      stack: error.stack,
-    });
+    console.error(
+      `[getNewsArticleBySlug] Error fetching news article by slug "${slug}" with Drizzle:`,
+      {
+        message: error.message,
+        code: error.code,
+        sql: error.sql,
+        stack: error.stack,
+      }
+    );
     throw error;
   }
 };
 
-export const getNewsArticleById = async (id: string): Promise<NewsArticle | null> => {
+export const getNewsArticleById = async (
+  id: string
+): Promise<NewsArticle | null> => {
   try {
-    const [newsArticle] = await db.select().from(newsarticle).where(eq(newsarticle.id, id)).limit(1);
+    const [newsArticle] = await db
+      .select()
+      .from(newsarticle)
+      .where(eq(newsarticle.id, id))
+      .limit(1);
     if (!newsArticle) return null;
     return {
       ...mapPrismaNewsToAppNews(newsArticle),
@@ -609,27 +854,35 @@ export const getNewsArticleById = async (id: string): Promise<NewsArticle | null
       isLikedByUser: false,
     };
   } catch (error) {
-    console.error(`Error fetching news article by ID "${id}" with Drizzle:`, error);
+    console.error(
+      `Error fetching news article by ID "${id}" with Drizzle:`,
+      error
+    );
     return null;
   }
 };
 
 export const getAllNewsArticles = async (): Promise<NewsArticle[]> => {
   try {
-    const newsArticles = await db.select().from(newsarticle).orderBy(desc(newsarticle.publishedDate));
-    return newsArticles.map(article => ({
+    const newsArticles = await db
+      .select()
+      .from(newsarticle)
+      .orderBy(desc(newsarticle.publishedDate));
+    return newsArticles.map((article) => ({
       ...mapPrismaNewsToAppNews(article),
       comments: [],
       likeCount: 0,
       isLikedByUser: false,
     }));
   } catch (error) {
-    console.error('Error fetching all news articles with Drizzle:', error);
+    console.error("Error fetching all news articles with Drizzle:", error);
     return [];
   }
 };
 
-export const createNewsArticleInDb = async (newsData: NewsArticleCreationData): Promise<NewsArticle | null> => {
+export const createNewsArticleInDb = async (
+  newsData: NewsArticleCreationData
+): Promise<NewsArticle | null> => {
   try {
     const newArticleId = uuidv4();
     await db.insert(newsarticle).values({
@@ -639,38 +892,63 @@ export const createNewsArticleInDb = async (newsData: NewsArticleCreationData): 
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    const newArticle = await db.select().from(newsarticle).where(eq(newsarticle.id, newArticleId)).limit(1).then(res => res[0]);
-    return newArticle ? {
-      ...mapPrismaNewsToAppNews(newArticle),
-      comments: [],
-      likeCount: 0,
-      isLikedByUser: false,
-    } : null;
+    const newArticle = await db
+      .select()
+      .from(newsarticle)
+      .where(eq(newsarticle.id, newArticleId))
+      .limit(1)
+      .then((res) => res[0]);
+    return newArticle
+      ? {
+          ...mapPrismaNewsToAppNews(newArticle),
+          comments: [],
+          likeCount: 0,
+          isLikedByUser: false,
+        }
+      : null;
   } catch (error) {
-    console.error('Error creating news article in DB with Drizzle:', error);
+    console.error("Error creating news article in DB with Drizzle:", error);
     throw error;
   }
 };
 
-export const updateNewsArticleInDb = async (id: string, newsData: Partial<NewsArticleCreationData>): Promise<NewsArticle | null> => {
+export const updateNewsArticleInDb = async (
+  id: string,
+  newsData: Partial<NewsArticleCreationData>
+): Promise<NewsArticle | null> => {
   try {
     const dataToUpdate = {
       ...newsData,
-      publishedDate: newsData.publishedDate ? new Date(newsData.publishedDate) : undefined,
-      imageUrl: newsData.imageUrl === '' ? null : newsData.imageUrl,
-      dataAiHint: newsData.dataAiHint === '' ? null : newsData.dataAiHint,
+      publishedDate: newsData.publishedDate
+        ? new Date(newsData.publishedDate)
+        : undefined,
+      imageUrl: newsData.imageUrl === "" ? null : newsData.imageUrl,
+      dataAiHint: newsData.dataAiHint === "" ? null : newsData.dataAiHint,
       updatedAt: new Date(),
     };
-    await db.update(newsarticle).set(dataToUpdate).where(eq(newsarticle.id, id));
-    const updatedArticle = await db.select().from(newsarticle).where(eq(newsarticle.id, id)).limit(1).then(res => res[0]);
-    return updatedArticle ? {
-      ...mapPrismaNewsToAppNews(updatedArticle),
-      comments: [],
-      likeCount: 0,
-      isLikedByUser: false,
-    } : null;
+    await db
+      .update(newsarticle)
+      .set(dataToUpdate)
+      .where(eq(newsarticle.id, id));
+    const updatedArticle = await db
+      .select()
+      .from(newsarticle)
+      .where(eq(newsarticle.id, id))
+      .limit(1)
+      .then((res) => res[0]);
+    return updatedArticle
+      ? {
+          ...mapPrismaNewsToAppNews(updatedArticle),
+          comments: [],
+          likeCount: 0,
+          isLikedByUser: false,
+        }
+      : null;
   } catch (error) {
-    console.error(`Error updating news article with ID "${id}" in DB with Drizzle:`, error);
+    console.error(
+      `Error updating news article with ID "${id}" in DB with Drizzle:`,
+      error
+    );
     throw error;
   }
 };
@@ -680,12 +958,17 @@ export const deleteNewsArticleFromDb = async (id: string): Promise<boolean> => {
     await db.transaction(async (tx) => {
       await tx.delete(newscomment).where(eq(newscomment.news_article_id, id));
       await tx.delete(newslike).where(eq(newslike.news_article_id, id));
-      await tx.delete(bookmarkednewsarticle).where(eq(bookmarkednewsarticle.news_article_id, id));
+      await tx
+        .delete(bookmarkednewsarticle)
+        .where(eq(bookmarkednewsarticle.news_article_id, id));
       await tx.delete(newsarticle).where(eq(newsarticle.id, id));
     });
     return true;
   } catch (error) {
-    console.error(`Error deleting news article with ID "${id}" from DB with Drizzle:`, error);
+    console.error(
+      `Error deleting news article with ID "${id}" from DB with Drizzle:`,
+      error
+    );
     return false;
   }
 };
@@ -693,70 +976,112 @@ export const deleteNewsArticleFromDb = async (id: string): Promise<boolean> => {
 // --- Services Data Functions ---
 export const getAllServices = async (): Promise<ServiceItem[]> => {
   try {
-    const drizzleServices = await db.select().from(service).orderBy(asc(service.title));
+    const drizzleServices = await db
+      .select()
+      .from(service)
+      .orderBy(asc(service.title));
     return drizzleServices.map(mapPrismaServiceToAppServiceItem);
   } catch (error) {
-    console.error('Error fetching all services with Drizzle:', error);
+    console.error("Error fetching all services with Drizzle:", error);
     return [];
   }
 };
 
-export const getServiceBySlug = async (slug: string): Promise<ServiceItem | undefined> => {
+export const getServiceBySlug = async (
+  slug: string
+): Promise<ServiceItem | undefined> => {
   try {
-    const [serviceRecord] = await db.select().from(service).where(eq(service.slug, slug)).limit(1);
-    return serviceRecord ? mapPrismaServiceToAppServiceItem(serviceRecord) : undefined;
+    const [serviceRecord] = await db
+      .select()
+      .from(service)
+      .where(eq(service.slug, slug))
+      .limit(1);
+    return serviceRecord
+      ? mapPrismaServiceToAppServiceItem(serviceRecord)
+      : undefined;
   } catch (error) {
-    console.error(`Error fetching service by slug "${slug}" with Drizzle:`, error);
+    console.error(
+      `Error fetching service by slug "${slug}" with Drizzle:`,
+      error
+    );
     return undefined;
   }
 };
 
-export const getServiceById = async (id: string): Promise<ServiceItem | null> => {
+export const getServiceById = async (
+  id: string
+): Promise<ServiceItem | null> => {
   try {
-    const [serviceRecord] = await db.select().from(service).where(eq(service.id, id)).limit(1);
-    return serviceRecord ? mapPrismaServiceToAppServiceItem(serviceRecord) : null;
+    const [serviceRecord] = await db
+      .select()
+      .from(service)
+      .where(eq(service.id, id))
+      .limit(1);
+    return serviceRecord
+      ? mapPrismaServiceToAppServiceItem(serviceRecord)
+      : null;
   } catch (error) {
     console.error(`Error fetching service by ID "${id}" with Drizzle:`, error);
     return null;
   }
 };
 
-export const createServiceInDb = async (serviceData: ServiceCreationData): Promise<ServiceItem | null> => {
+export const createServiceInDb = async (
+  serviceData: ServiceCreationData
+): Promise<ServiceItem | null> => {
   try {
-    console.log('[createServiceInDb] Starting with serviceData:', serviceData);
+    console.log("[createServiceInDb] Starting with serviceData:", serviceData);
     const newServiceId = uuidv4();
-    console.log('[createServiceInDb] New service ID:', newServiceId);
+    console.log("[createServiceInDb] New service ID:", newServiceId);
     await db.insert(service).values({
       id: newServiceId,
       ...serviceData,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    console.log('[createServiceInDb] Inserted service');
-    const newService = await db.select().from(service).where(eq(service.id, newServiceId)).limit(1).then(res => res[0]);
-    console.log('[createServiceInDb] Retrieved new service:', newService);
+    console.log("[createServiceInDb] Inserted service");
+    const newService = await db
+      .select()
+      .from(service)
+      .where(eq(service.id, newServiceId))
+      .limit(1)
+      .then((res) => res[0]);
+    console.log("[createServiceInDb] Retrieved new service:", newService);
     return newService ? mapPrismaServiceToAppServiceItem(newService) : null;
   } catch (error) {
-    console.error('[createServiceInDb] Error:', error);
+    console.error("[createServiceInDb] Error:", error);
     throw error;
   }
 };
 
-export const updateServiceInDb = async (id: string, serviceData: Partial<ServiceCreationData>): Promise<ServiceItem | null> => {
+export const updateServiceInDb = async (
+  id: string,
+  serviceData: Partial<ServiceCreationData>
+): Promise<ServiceItem | null> => {
   try {
     const dataToUpdate = {
       ...serviceData,
-      iconName: serviceData.iconName === '' ? null : serviceData.iconName,
-      link: serviceData.link === '' ? null : serviceData.link,
-      imageUrl: serviceData.imageUrl === '' ? null : serviceData.imageUrl,
-      dataAiHint: serviceData.dataAiHint === '' ? null : serviceData.dataAiHint,
+      iconName: serviceData.iconName === "" ? null : serviceData.iconName,
+      link: serviceData.link === "" ? null : serviceData.link,
+      imageUrl: serviceData.imageUrl === "" ? null : serviceData.imageUrl,
+      dataAiHint: serviceData.dataAiHint === "" ? null : serviceData.dataAiHint,
       updatedAt: new Date(),
     };
     await db.update(service).set(dataToUpdate).where(eq(service.id, id));
-    const updatedService = await db.select().from(service).where(eq(service.id, id)).limit(1).then(res => res[0]);
-    return updatedService ? mapPrismaServiceToAppServiceItem(updatedService) : null;
+    const updatedService = await db
+      .select()
+      .from(service)
+      .where(eq(service.id, id))
+      .limit(1)
+      .then((res) => res[0]);
+    return updatedService
+      ? mapPrismaServiceToAppServiceItem(updatedService)
+      : null;
   } catch (error) {
-    console.error(`Error updating service with ID "${id}" in DB with Drizzle:`, error);
+    console.error(
+      `Error updating service with ID "${id}" in DB with Drizzle:`,
+      error
+    );
     throw error;
   }
 };
@@ -766,7 +1091,10 @@ export const deleteServiceFromDb = async (id: string): Promise<boolean> => {
     await db.delete(service).where(eq(service.id, id));
     return true;
   } catch (error) {
-    console.error(`Error deleting service with ID "${id}" from DB with Drizzle:`, error);
+    console.error(
+      `Error deleting service with ID "${id}" from DB with Drizzle:`,
+      error
+    );
     return false;
   }
 };
@@ -774,17 +1102,24 @@ export const deleteServiceFromDb = async (id: string): Promise<boolean> => {
 // --- Video Data Functions ---
 export const getAllVideosFromDb = async (): Promise<Video[]> => {
   try {
-    const drizzleVideos = await db.select().from(video).orderBy(desc(video.createdAt));
+    const drizzleVideos = await db
+      .select()
+      .from(video)
+      .orderBy(desc(video.createdAt));
     return drizzleVideos.map(mapPrismaVideoToAppVideo);
   } catch (error) {
-    console.error('Error fetching all videos with Drizzle:', error);
+    console.error("Error fetching all videos with Drizzle:", error);
     return [];
   }
 };
 
 export const getVideoById = async (id: string): Promise<Video | null> => {
   try {
-    const [videoRecord] = await db.select().from(video).where(eq(video.id, id)).limit(1);
+    const [videoRecord] = await db
+      .select()
+      .from(video)
+      .where(eq(video.id, id))
+      .limit(1);
     return videoRecord ? mapPrismaVideoToAppVideo(videoRecord) : null;
   } catch (error) {
     console.error(`Error fetching video by ID "${id}" with Drizzle:`, error);
@@ -792,7 +1127,9 @@ export const getVideoById = async (id: string): Promise<Video | null> => {
   }
 };
 
-export const createVideoInDb = async (videoData: VideoCreationData): Promise<Video | null> => {
+export const createVideoInDb = async (
+  videoData: VideoCreationData
+): Promise<Video | null> => {
   try {
     const newVideoId = uuidv4();
     await db.insert(video).values({
@@ -801,28 +1138,45 @@ export const createVideoInDb = async (videoData: VideoCreationData): Promise<Vid
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    const newVideo = await db.select().from(video).where(eq(video.id, newVideoId)).limit(1).then(res => res[0]);
+    const newVideo = await db
+      .select()
+      .from(video)
+      .where(eq(video.id, newVideoId))
+      .limit(1)
+      .then((res) => res[0]);
     return newVideo ? mapPrismaVideoToAppVideo(newVideo) : null;
   } catch (error) {
-    console.error('Error creating video in DB with Drizzle:', error);
+    console.error("Error creating video in DB with Drizzle:", error);
     throw error;
   }
 };
 
-export const updateVideoInDb = async (id: string, videoData: Partial<VideoCreationData>): Promise<Video | null> => {
+export const updateVideoInDb = async (
+  id: string,
+  videoData: Partial<VideoCreationData>
+): Promise<Video | null> => {
   try {
     const dataToUpdate = {
       ...videoData,
-      thumbnailUrl: videoData.thumbnailUrl === '' ? null : videoData.thumbnailUrl,
-      dataAiHint: videoData.dataAiHint === '' ? null : videoData.dataAiHint,
-      description: videoData.description === '' ? null : videoData.description,
+      thumbnailUrl:
+        videoData.thumbnailUrl === "" ? null : videoData.thumbnailUrl,
+      dataAiHint: videoData.dataAiHint === "" ? null : videoData.dataAiHint,
+      description: videoData.description === "" ? null : videoData.description,
       updatedAt: new Date(),
     };
     await db.update(video).set(dataToUpdate).where(eq(video.id, id));
-    const updatedVideo = await db.select().from(video).where(eq(video.id, id)).limit(1).then(res => res[0]);
+    const updatedVideo = await db
+      .select()
+      .from(video)
+      .where(eq(video.id, id))
+      .limit(1)
+      .then((res) => res[0]);
     return updatedVideo ? mapPrismaVideoToAppVideo(updatedVideo) : null;
   } catch (error) {
-    console.error(`Error updating video with ID "${id}" in DB with Drizzle:`, error);
+    console.error(
+      `Error updating video with ID "${id}" in DB with Drizzle:`,
+      error
+    );
     throw error;
   }
 };
@@ -832,7 +1186,10 @@ export const deleteVideoFromDb = async (id: string): Promise<boolean> => {
     await db.delete(video).where(eq(video.id, id));
     return true;
   } catch (error) {
-    console.error(`Error deleting video with ID "${id}" from DB with Drizzle:`, error);
+    console.error(
+      `Error deleting video with ID "${id}" from DB with Drizzle:`,
+      error
+    );
     return false;
   }
 };
@@ -842,7 +1199,11 @@ const SITE_SETTINGS_ID = "global_settings";
 
 export const getSiteSettingsFromDb = async (): Promise<SiteSettings | null> => {
   try {
-    const [settings] = await db.select().from(sitesetting).where(eq(sitesetting.id, SITE_SETTINGS_ID)).limit(1);
+    const [settings] = await db
+      .select()
+      .from(sitesetting)
+      .where(eq(sitesetting.id, SITE_SETTINGS_ID))
+      .limit(1);
     if (settings) {
       return mapPrismaSiteSettingToAppSiteSetting(settings);
     }
@@ -860,29 +1221,52 @@ export const getSiteSettingsFromDb = async (): Promise<SiteSettings | null> => {
   }
 };
 
-export const updateSiteSettingsInDb = async (settingsData: Partial<Omit<SiteSettings, 'id'>>): Promise<SiteSettings | null> => {
+export const updateSiteSettingsInDb = async (
+  settingsData: Partial<Omit<SiteSettings, "id">>
+): Promise<SiteSettings | null> => {
   try {
     const dataToUpsert = {
       siteName: settingsData.siteName ?? "NigeriaGovHub",
       maintenanceMode: settingsData.maintenanceMode ?? false,
       contactEmail: settingsData.contactEmail ?? "info@example.com",
-      footerMessage: settingsData.footerMessage ?? `© ${new Date().getFullYear()} NigeriaGovHub. All rights reserved.`,
+      footerMessage:
+        settingsData.footerMessage ??
+        `© ${new Date().getFullYear()} NigeriaGovHub. All rights reserved.`,
       updatedAt: new Date(),
       id: SITE_SETTINGS_ID,
     };
 
-    const [existingSettings] = await db.select().from(sitesetting).where(eq(sitesetting.id, SITE_SETTINGS_ID)).limit(1);
+    const [existingSettings] = await db
+      .select()
+      .from(sitesetting)
+      .where(eq(sitesetting.id, SITE_SETTINGS_ID))
+      .limit(1);
 
     let updatedSettings;
     if (existingSettings) {
-      await db.update(sitesetting).set(dataToUpsert).where(eq(sitesetting.id, SITE_SETTINGS_ID));
-      updatedSettings = await db.select().from(sitesetting).where(eq(sitesetting.id, SITE_SETTINGS_ID)).limit(1).then(res => res[0]);
+      await db
+        .update(sitesetting)
+        .set(dataToUpsert)
+        .where(eq(sitesetting.id, SITE_SETTINGS_ID));
+      updatedSettings = await db
+        .select()
+        .from(sitesetting)
+        .where(eq(sitesetting.id, SITE_SETTINGS_ID))
+        .limit(1)
+        .then((res) => res[0]);
     } else {
       await db.insert(sitesetting).values(dataToUpsert);
-      updatedSettings = await db.select().from(sitesetting).where(eq(sitesetting.id, SITE_SETTINGS_ID)).limit(1).then(res => res[0]);
+      updatedSettings = await db
+        .select()
+        .from(sitesetting)
+        .where(eq(sitesetting.id, SITE_SETTINGS_ID))
+        .limit(1)
+        .then((res) => res[0]);
     }
 
-    return updatedSettings ? mapPrismaSiteSettingToAppSiteSetting(updatedSettings) : null;
+    return updatedSettings
+      ? mapPrismaSiteSettingToAppSiteSetting(updatedSettings)
+      : null;
   } catch (error) {
     console.error("Error updating site settings in DB with Drizzle:", error);
     throw error;
@@ -890,24 +1274,30 @@ export const updateSiteSettingsInDb = async (settingsData: Partial<Omit<SiteSett
 };
 
 // --- User Dashboard Functions ---
-export const getUserDashboardStatsFromDb = async (userId: string): Promise<UserDashboardStats> => {
+export const getUserDashboardStatsFromDb = async (
+  userId: string
+): Promise<UserDashboardStats> => {
   try {
-    const feedbackCount = await db.select({ count: sql`COUNT(*)` })
+    const feedbackCount = await db
+      .select({ count: sql`COUNT(*)` })
       .from(feedback)
       .where(eq(feedback.user_id, userId))
-      .then(res => Number(res[0].count));
-    const ratingAgg = await db.select({ avg: sql`AVG(${feedback.rating})` })
+      .then((res) => Number(res[0].count));
+    const ratingAgg = await db
+      .select({ avg: sql`AVG(${feedback.rating})` })
       .from(feedback)
       .where(and(eq(feedback.user_id, userId), isNotNull(feedback.rating)))
-      .then(res => Number(res[0].avg) || 0);
-    const bookmarkedProjectsCount = await db.select({ count: sql`COUNT(*)` })
+      .then((res) => Number(res[0].avg) || 0);
+    const bookmarkedProjectsCount = await db
+      .select({ count: sql`COUNT(*)` })
       .from(bookmarkedproject)
       .where(eq(bookmarkedproject.user_id, userId))
-      .then(res => Number(res[0].count));
-    const bookmarkedNewsCount = await db.select({ count: sql`COUNT(*)` })
+      .then((res) => Number(res[0].count));
+    const bookmarkedNewsCount = await db
+      .select({ count: sql`COUNT(*)` })
       .from(bookmarkednewsarticle)
       .where(eq(bookmarkednewsarticle.user_id, userId))
-      .then(res => Number(res[0].count));
+      .then((res) => Number(res[0].count));
     return {
       feedbackSubmitted: feedbackCount,
       bookmarkedProjects: bookmarkedProjectsCount,
@@ -915,12 +1305,19 @@ export const getUserDashboardStatsFromDb = async (userId: string): Promise<UserD
       averageRating: ratingAgg,
     };
   } catch (error) {
-    console.error('Error fetching user dashboard stats with Drizzle:', error);
-    return { feedbackSubmitted: 0, bookmarkedProjects: 0, bookmarkedNews: 0, averageRating: 0 };
+    console.error("Error fetching user dashboard stats with Drizzle:", error);
+    return {
+      feedbackSubmitted: 0,
+      bookmarkedProjects: 0,
+      bookmarkedNews: 0,
+      averageRating: 0,
+    };
   }
 };
 
-export const getUserFeedbackFromDb = async (userId: string): Promise<Array<Feedback & { projectTitle: string; projectId: string }>> => {
+export const getUserFeedbackFromDb = async (
+  userId: string
+): Promise<Array<Feedback & { projectTitle: string; projectId: string }>> => {
   try {
     const feedbackWithProjects = await db.query.feedback.findMany({
       where: eq(feedback.user_id, userId),
@@ -933,30 +1330,42 @@ export const getUserFeedbackFromDb = async (userId: string): Promise<Array<Feedb
       orderBy: [desc(feedback.created_at)],
     });
 
-    return feedbackWithProjects.map(fb => ({
+    return feedbackWithProjects.map((fb) => ({
       ...mapPrismaFeedbackToAppFeedback({ ...fb, user: fb.user || null }),
-      projectTitle: fb.project?.title || 'Unknown Project',
+      projectTitle: fb.project?.title || "Unknown Project",
       projectId: fb.project_id,
     }));
   } catch (error) {
-    console.error('Error fetching user feedback with Drizzle:', error);
+    console.error("Error fetching user feedback with Drizzle:", error);
     return [];
   }
 };
 
-export const updateUserNameInDb = async (userId: string, name: string): Promise<User | null> => {
+export const updateUserNameInDb = async (
+  userId: string,
+  name: string
+): Promise<User | null> => {
   try {
     await db.update(user).set({ name }).where(eq(user.id, userId));
-    const [updatedUser] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+    const [updatedUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, userId))
+      .limit(1);
     return updatedUser ? mapPrismaUserToAppUser(updatedUser) : null;
   } catch (error) {
-    console.error(`Error updating user name for user ${userId} with Drizzle:`, error);
+    console.error(
+      `Error updating user name for user ${userId} with Drizzle:`,
+      error
+    );
     return null;
   }
 };
 
 // --- News Bookmark Functions ---
-export const getUserBookmarkedNewsFromDb = async (userId: string): Promise<NewsArticle[]> => {
+export const getUserBookmarkedNewsFromDb = async (
+  userId: string
+): Promise<NewsArticle[]> => {
   try {
     const bookmarks = await db.query.bookmarkednewsarticle.findMany({
       where: eq(bookmarkednewsarticle.user_id, userId),
@@ -979,32 +1388,47 @@ export const getUserBookmarkedNewsFromDb = async (userId: string): Promise<NewsA
       },
       orderBy: [desc(bookmarkednewsarticle.createdAt)],
     });
-    return bookmarks.map(bookmark => ({
+    return bookmarks.map((bookmark) => ({
       ...mapPrismaNewsToAppNews(bookmark.newsarticle!),
       comments: [],
       likeCount: 0,
       isLikedByUser: true,
     }));
   } catch (error) {
-    console.error('Error fetching user bookmarked news with Drizzle:', error);
+    console.error("Error fetching user bookmarked news with Drizzle:", error);
     return [];
   }
 };
 
-export const isNewsArticleBookmarked = async (userId: string, articleId: string): Promise<boolean> => {
+export const isNewsArticleBookmarked = async (
+  userId: string,
+  articleId: string
+): Promise<boolean> => {
   try {
-    const bookmark = await db.select()
+    const bookmark = await db
+      .select()
       .from(bookmarkednewsarticle)
-      .where(and(eq(bookmarkednewsarticle.user_id, userId), eq(bookmarkednewsarticle.news_article_id, articleId)))
+      .where(
+        and(
+          eq(bookmarkednewsarticle.user_id, userId),
+          eq(bookmarkednewsarticle.news_article_id, articleId)
+        )
+      )
       .limit(1);
     return bookmark.length > 0;
   } catch (error) {
-    console.error(`Error checking bookmark for user ${userId} and article ${articleId} with Drizzle:`, error);
+    console.error(
+      `Error checking bookmark for user ${userId} and article ${articleId} with Drizzle:`,
+      error
+    );
     return false;
   }
 };
 
-export const addNewsBookmarkInDb = async (userId: string, articleId: string): Promise<boolean> => {
+export const addNewsBookmarkInDb = async (
+  userId: string,
+  articleId: string
+): Promise<boolean> => {
   try {
     await db.insert(bookmarkednewsarticle).values({
       id: uuidv4(),
@@ -1014,24 +1438,35 @@ export const addNewsBookmarkInDb = async (userId: string, articleId: string): Pr
     });
     return true;
   } catch (error) {
-    console.error('Error adding news bookmark with Drizzle:', error);
+    console.error("Error adding news bookmark with Drizzle:", error);
     throw error;
   }
 };
 
-export const removeNewsBookmarkInDb = async (userId: string, articleId: string): Promise<boolean> => {
+export const removeNewsBookmarkInDb = async (
+  userId: string,
+  articleId: string
+): Promise<boolean> => {
   try {
-    await db.delete(bookmarkednewsarticle)
-      .where(and(eq(bookmarkednewsarticle.user_id, userId), eq(bookmarkednewsarticle.news_article_id, articleId)));
+    await db
+      .delete(bookmarkednewsarticle)
+      .where(
+        and(
+          eq(bookmarkednewsarticle.user_id, userId),
+          eq(bookmarkednewsarticle.news_article_id, articleId)
+        )
+      );
     return true;
   } catch (error) {
-    console.error('Error removing news bookmark with Drizzle:', error);
+    console.error("Error removing news bookmark with Drizzle:", error);
     throw error;
   }
 };
 
 // --- Project Bookmark Functions ---
-export const getUserBookmarkedProjectsFromDb = async (userId: string): Promise<Project[]> => {
+export const getUserBookmarkedProjectsFromDb = async (
+  userId: string
+): Promise<Project[]> => {
   try {
     const bookmarks = await db.query.bookmarkedproject.findMany({
       where: eq(bookmarkedproject.user_id, userId),
@@ -1064,27 +1499,47 @@ export const getUserBookmarkedProjectsFromDb = async (userId: string): Promise<P
       },
       orderBy: [desc(bookmarkedproject.createdAt)],
     });
-    return bookmarks.map(bookmark => mapPrismaProjectToAppProject(bookmark.project!));
+    return bookmarks.map((bookmark) =>
+      mapPrismaProjectToAppProject(bookmark.project!)
+    );
   } catch (error) {
-    console.error('Error fetching user bookmarked projects with Drizzle:', error);
+    console.error(
+      "Error fetching user bookmarked projects with Drizzle:",
+      error
+    );
     return [];
   }
 };
 
-export const isProjectBookmarked = async (userId: string, projectId: string): Promise<boolean> => {
+export const isProjectBookmarked = async (
+  userId: string,
+  projectId: string
+): Promise<boolean> => {
   try {
-    const bookmark = await db.select()
+    const bookmark = await db
+      .select()
       .from(bookmarkedproject)
-      .where(and(eq(bookmarkedproject.user_id, userId), eq(bookmarkedproject.project_id, projectId)))
+      .where(
+        and(
+          eq(bookmarkedproject.user_id, userId),
+          eq(bookmarkedproject.project_id, projectId)
+        )
+      )
       .limit(1);
     return bookmark.length > 0;
   } catch (error) {
-    console.error(`Error checking project bookmark for user ${userId} and project ${projectId} with Drizzle:`, error);
+    console.error(
+      `Error checking project bookmark for user ${userId} and project ${projectId} with Drizzle:`,
+      error
+    );
     return false;
   }
 };
 
-export const addProjectBookmarkInDb = async (userId: string, projectId: string): Promise<boolean> => {
+export const addProjectBookmarkInDb = async (
+  userId: string,
+  projectId: string
+): Promise<boolean> => {
   try {
     await db.insert(bookmarkedproject).values({
       id: uuidv4(),
@@ -1094,24 +1549,36 @@ export const addProjectBookmarkInDb = async (userId: string, projectId: string):
     });
     return true;
   } catch (error) {
-    console.error('Error adding project bookmark with Drizzle:', error);
+    console.error("Error adding project bookmark with Drizzle:", error);
     throw error;
   }
 };
 
-export const removeProjectBookmarkInDb = async (userId: string, projectId: string): Promise<boolean> => {
+export const removeProjectBookmarkInDb = async (
+  userId: string,
+  projectId: string
+): Promise<boolean> => {
   try {
-    await db.delete(bookmarkedproject)
-      .where(and(eq(bookmarkedproject.user_id, userId), eq(bookmarkedproject.project_id, projectId)));
+    await db
+      .delete(bookmarkedproject)
+      .where(
+        and(
+          eq(bookmarkedproject.user_id, userId),
+          eq(bookmarkedproject.project_id, projectId)
+        )
+      );
     return true;
   } catch (error) {
-    console.error('Error removing project bookmark with Drizzle:', error);
+    console.error("Error removing project bookmark with Drizzle:", error);
     throw error;
   }
 };
 
 // --- News Like Functions ---
-export const addNewsLikeInDb = async (userId: string, articleId: string): Promise<boolean> => {
+export const addNewsLikeInDb = async (
+  userId: string,
+  articleId: string
+): Promise<boolean> => {
   try {
     await db.insert(newslike).values({
       id: uuidv4(),
@@ -1121,32 +1588,56 @@ export const addNewsLikeInDb = async (userId: string, articleId: string): Promis
     });
     return true;
   } catch (error) {
-    console.error('Error adding news like with Drizzle:', error);
+    console.error("Error adding news like with Drizzle:", error);
     throw error;
   }
 };
 
-export const removeNewsLikeInDb = async (userId: string, articleId: string): Promise<boolean> => {
+export const removeNewsLikeInDb = async (
+  userId: string,
+  articleId: string
+): Promise<boolean> => {
   try {
-    await db.delete(newslike)
-      .where(and(eq(newslike.user_id, userId), eq(newslike.news_article_id, articleId)));
+    await db
+      .delete(newslike)
+      .where(
+        and(
+          eq(newslike.user_id, userId),
+          eq(newslike.news_article_id, articleId)
+        )
+      );
     return true;
   } catch (error) {
-    console.error('Error removing news like with Drizzle:', error);
+    console.error("Error removing news like with Drizzle:", error);
     throw error;
   }
 };
 
-export const toggleNewsLikeInDb = async (userId: string, articleId: string): Promise<boolean> => {
+export const toggleNewsLikeInDb = async (
+  userId: string,
+  articleId: string
+): Promise<boolean> => {
   try {
-    const existingLike = await db.select()
+    const existingLike = await db
+      .select()
       .from(newslike)
-      .where(and(eq(newslike.user_id, userId), eq(newslike.news_article_id, articleId)))
+      .where(
+        and(
+          eq(newslike.user_id, userId),
+          eq(newslike.news_article_id, articleId)
+        )
+      )
       .limit(1);
 
     if (existingLike.length > 0) {
-      await db.delete(newslike)
-        .where(and(eq(newslike.user_id, userId), eq(newslike.news_article_id, articleId)));
+      await db
+        .delete(newslike)
+        .where(
+          and(
+            eq(newslike.user_id, userId),
+            eq(newslike.news_article_id, articleId)
+          )
+        );
       return false;
     } else {
       await db.insert(newslike).values({
@@ -1158,17 +1649,28 @@ export const toggleNewsLikeInDb = async (userId: string, articleId: string): Pro
       return true;
     }
   } catch (error) {
-    console.error('Error toggling news like with Drizzle:', error);
+    console.error("Error toggling news like with Drizzle:", error);
     throw error;
   }
 };
 
 // --- News Comment Functions ---
-export const addNewsCommentInDb = async (articleId: string, userId: string, content: string) => {
+export const addNewsCommentInDb = async (
+  articleId: string,
+  userId: string,
+  content: string
+) => {
   try {
-    console.log('[addNewsCommentInDb] Starting with articleId:', articleId, 'userId:', userId, 'content:', content);
+    console.log(
+      "[addNewsCommentInDb] Starting with articleId:",
+      articleId,
+      "userId:",
+      userId,
+      "content:",
+      content
+    );
     const newCommentId = uuidv4();
-    console.log('[addNewsCommentInDb] New comment ID:', newCommentId);
+    console.log("[addNewsCommentInDb] New comment ID:", newCommentId);
     await db.insert(newscomment).values({
       id: newCommentId,
       user_id: userId,
@@ -1177,7 +1679,7 @@ export const addNewsCommentInDb = async (articleId: string, userId: string, cont
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    console.log('[addNewsCommentInDb] Inserted comment');
+    console.log("[addNewsCommentInDb] Inserted comment");
     const newComment = await db
       .select({
         id: newscomment.id,
@@ -1192,28 +1694,33 @@ export const addNewsCommentInDb = async (articleId: string, userId: string, cont
       .from(newscomment)
       .leftJoin(user, eq(newscomment.user_id, user.id))
       .where(eq(newscomment.id, newCommentId))
-      .then(res => res[0]);
-    console.log('[addNewsCommentInDb] Retrieved comment:', newComment);
+      .then((res) => res[0]);
+    console.log("[addNewsCommentInDb] Retrieved comment:", newComment);
     return newComment
       ? {
           id: newComment.id,
           content: newComment.content,
           createdAt: newComment.createdAt,
-          user: newComment.user || { id: '', name: 'Anonymous', image: null },
+          user: newComment.user || { id: "", name: "Anonymous", image: null },
         }
       : null;
   } catch (error) {
-    console.error('[addNewsCommentInDb] Error:', error);
+    console.error("[addNewsCommentInDb] Error:", error);
     throw error;
   }
 };
 
-export const deleteNewsCommentFromDb = async (commentId: string): Promise<boolean> => {
+export const deleteNewsCommentFromDb = async (
+  commentId: string
+): Promise<boolean> => {
   try {
     await db.delete(newscomment).where(eq(newscomment.id, commentId));
     return true;
   } catch (error) {
-    console.error(`Error deleting news comment with ID "${commentId}" with Drizzle:`, error);
+    console.error(
+      `Error deleting news comment with ID "${commentId}" with Drizzle:`,
+      error
+    );
     return false;
   }
 };
@@ -1225,6 +1732,236 @@ export const getAllStates = async (): Promise<State[]> => {
 
 export const getAllMinistries = async (): Promise<Ministry[]> => {
   return ministries;
+};
+
+// --- Opportunity Data Functions ---
+export type OpportunityCreationData = {
+  slug: string;
+  title: string;
+  summary: string;
+  category: string;
+  imageUrl: string | null;
+  dataAiHint: string | null;
+  publishedDate: Date;
+  content: string;
+};
+
+export type Opportunity = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  category: string;
+  imageUrl: string | null;
+  dataAiHint: string | null;
+  publishedDate: Date;
+  content: string;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+};
+
+export const getAllOpportunities = async (): Promise<Opportunity[]> => {
+  try {
+    const opportunities = await db
+      .select()
+      .from(opportunity)
+      .orderBy(desc(opportunity.publishedDate));
+    return opportunities.map((opp) => ({
+      id: opp.id,
+      slug: opp.slug,
+      title: opp.title,
+      summary: opp.summary,
+      category: opp.category,
+      imageUrl: opp.imageUrl,
+      dataAiHint: opp.dataAiHint,
+      publishedDate: opp.publishedDate,
+      content: opp.content,
+      createdAt: opp.createdAt ? new Date(opp.createdAt) : null,
+      updatedAt: opp.updatedAt ? new Date(opp.updatedAt) : null,
+    }));
+  } catch (error: any) {
+    // If the table doesn't exist in the connected database, return an empty list and log a helpful message.
+    const code = error?.cause?.code || error?.code || error?.errno;
+    if (code === "ER_NO_SUCH_TABLE" || code === 1146) {
+      console.warn(
+        "Opportunity table is missing in the database (ER_NO_SUCH_TABLE). Returning empty list.\n" +
+          "If you intended to use opportunities, run your migrations to create the table (e.g., `npx drizzle-kit migrate` or apply the SQL in drizzle/migrations/0002_careful_lady_deathstrike.sql)."
+      );
+      return [];
+    }
+    console.error("Error fetching all opportunities with Drizzle:", error);
+    return [];
+  }
+};
+
+export const getOpportunityBySlug = async (
+  slug: string
+): Promise<Opportunity | null> => {
+  try {
+    const [opp] = await db
+      .select()
+      .from(opportunity)
+      .where(eq(opportunity.slug, slug))
+      .limit(1);
+    if (!opp) return null;
+    return {
+      id: opp.id,
+      slug: opp.slug,
+      title: opp.title,
+      summary: opp.summary,
+      category: opp.category,
+      imageUrl: opp.imageUrl,
+      dataAiHint: opp.dataAiHint,
+      publishedDate: opp.publishedDate,
+      content: opp.content,
+      createdAt: opp.createdAt ? new Date(opp.createdAt) : null,
+      updatedAt: opp.updatedAt ? new Date(opp.updatedAt) : null,
+    };
+  } catch (error: any) {
+    const code = error?.cause?.code || error?.code || error?.errno;
+    if (code === "ER_NO_SUCH_TABLE" || code === 1146) {
+      console.warn(
+        `Opportunity table is missing in the database (ER_NO_SUCH_TABLE) when fetching slug="${slug}". Returning null.`
+      );
+      return null;
+    }
+    console.error(
+      `Error fetching opportunity by slug "${slug}" with Drizzle:`,
+      error
+    );
+    return null;
+  }
+};
+
+export const createOpportunityInDb = async (
+  opportunityData: OpportunityCreationData
+): Promise<Opportunity | null> => {
+  try {
+    const newOpportunityId = uuidv4();
+    await db.insert(opportunity).values({
+      id: newOpportunityId,
+      ...opportunityData,
+      publishedDate: new Date(opportunityData.publishedDate),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const newOpportunity = await db
+      .select()
+      .from(opportunity)
+      .where(eq(opportunity.id, newOpportunityId))
+      .limit(1)
+      .then((res) => res[0]);
+    return newOpportunity
+      ? {
+          id: newOpportunity.id,
+          slug: newOpportunity.slug,
+          title: newOpportunity.title,
+          summary: newOpportunity.summary,
+          category: newOpportunity.category,
+          imageUrl: newOpportunity.imageUrl,
+          dataAiHint: newOpportunity.dataAiHint,
+          publishedDate: newOpportunity.publishedDate,
+          content: newOpportunity.content,
+          createdAt: newOpportunity.createdAt
+            ? new Date(newOpportunity.createdAt)
+            : null,
+          updatedAt: newOpportunity.updatedAt
+            ? new Date(newOpportunity.updatedAt)
+            : null,
+        }
+      : null;
+  } catch (error: any) {
+    const code = error?.cause?.code || error?.code || error?.errno;
+    if (code === "ER_NO_SUCH_TABLE" || code === 1146) {
+      console.warn(
+        "Cannot create opportunity: opportunity table is missing in the database (ER_NO_SUCH_TABLE)."
+      );
+      return null;
+    }
+    console.error("Error creating opportunity in DB with Drizzle:", error);
+    throw error;
+  }
+};
+
+export const updateOpportunityInDb = async (
+  id: string,
+  opportunityData: Partial<OpportunityCreationData>
+): Promise<Opportunity | null> => {
+  try {
+    const dataToUpdate = {
+      ...opportunityData,
+      publishedDate: opportunityData.publishedDate
+        ? new Date(opportunityData.publishedDate)
+        : undefined,
+      imageUrl:
+        opportunityData.imageUrl === "" ? null : opportunityData.imageUrl,
+      dataAiHint:
+        opportunityData.dataAiHint === "" ? null : opportunityData.dataAiHint,
+      updatedAt: new Date(),
+    };
+    await db
+      .update(opportunity)
+      .set(dataToUpdate)
+      .where(eq(opportunity.id, id));
+    const updatedOpportunity = await db
+      .select()
+      .from(opportunity)
+      .where(eq(opportunity.id, id))
+      .limit(1)
+      .then((res) => res[0]);
+    return updatedOpportunity
+      ? {
+          id: updatedOpportunity.id,
+          slug: updatedOpportunity.slug,
+          title: updatedOpportunity.title,
+          summary: updatedOpportunity.summary,
+          category: updatedOpportunity.category,
+          imageUrl: updatedOpportunity.imageUrl,
+          dataAiHint: updatedOpportunity.dataAiHint,
+          publishedDate: updatedOpportunity.publishedDate,
+          content: updatedOpportunity.content,
+          createdAt: updatedOpportunity.createdAt
+            ? new Date(updatedOpportunity.createdAt)
+            : null,
+          updatedAt: updatedOpportunity.updatedAt
+            ? new Date(updatedOpportunity.updatedAt)
+            : null,
+        }
+      : null;
+  } catch (error: any) {
+    const code = error?.cause?.code || error?.code || error?.errno;
+    if (code === "ER_NO_SUCH_TABLE" || code === 1146) {
+      console.warn(
+        `Cannot update opportunity: opportunity table is missing in the database (ER_NO_SUCH_TABLE) for id="${id}".`
+      );
+      return null;
+    }
+    console.error(
+      `Error updating opportunity with ID "${id}" in DB with Drizzle:`,
+      error
+    );
+    throw error;
+  }
+};
+
+export const deleteOpportunityFromDb = async (id: string): Promise<boolean> => {
+  try {
+    await db.delete(opportunity).where(eq(opportunity.id, id));
+    return true;
+  } catch (error: any) {
+    const code = error?.cause?.code || error?.code || error?.errno;
+    if (code === "ER_NO_SUCH_TABLE" || code === 1146) {
+      console.warn(
+        `Cannot delete opportunity: opportunity table is missing in the database (ER_NO_SUCH_TABLE) for id="${id}".`
+      );
+      return false;
+    }
+    console.error(
+      `Error deleting opportunity with ID "${id}" from DB with Drizzle:`,
+      error
+    );
+    return false;
+  }
 };
 
 // export const ministries = mockMinistries;

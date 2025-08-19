@@ -11,7 +11,7 @@ import { getAllNewsArticles, getAllServices, getAllProjects, getAllVideosFromDb 
 import { NewsCard } from "@/components/news/news-card";
 import { ServiceCard } from "@/components/services/service-card";
 import { VideoCard } from "@/components/common/video-card";
-import type { Project, NewsArticle, ServiceItem, Video } from "@/types/server";
+import type { Project, NewsArticle, ServiceItem, Video } from "@/types/client";
 import { useLanguage } from "@/context/language-context";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +23,7 @@ function HomePageContent() {
   const t = dictionary.home_page;
 
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>([]);
-  const [latestArticles, setLatestArticles] = useState<NewsArticle[]>([]);
+  const [latestNews, setLatestNews] = useState<NewsArticle[]>([]);
   const [popularServices, setPopularServices] = useState<ServiceItem[]>([]);
   const [featuredVideos, setFeaturedVideos] = useState<Video[]>([]);
   const [allVideosCount, setAllVideosCount] = useState(0);
@@ -39,7 +39,7 @@ function HomePageContent() {
           console.error("Failed to fetch homepage data:", homepageData.error);
         } else {
           setFeaturedProjects(homepageData.projects || []);
-          setLatestArticles(homepageData.news || []);
+          setLatestNews(homepageData.news || []);
           setPopularServices(homepageData.services || []);
           setFeaturedVideos(homepageData.videos || []);
           setAllVideosCount(homepageData.allVideosCount || 0);
@@ -65,13 +65,13 @@ function HomePageContent() {
             {t.hero_subtitle}
           </p>
 
-          <form action="/search" method="GET" className="mt-8 max-w-2xl mx-auto flex gap-2">
+          <form action="/projects" method="GET" className="mt-8 max-w-2xl mx-auto flex gap-2">
             <Input
                 type="search"
-                name="q"
+                name="search"
                 placeholder={t.search_placeholder}
                 className="flex-grow text-base p-6 bg-background"
-                aria-label="Search for projects, opportunities, and more"
+                aria-label="Search for projects"
             />
             <Button type="submit" size="lg" className="p-6 button-hover">
                 <Search className="h-5 w-5 mr-2" /> {t.search_button}
@@ -174,20 +174,29 @@ function HomePageContent() {
       )}
 
       {/* Latest News Section */}
-      {latestArticles.length > 0 && (
-        <section className="py-16 bg-muted/30 rounded-lg">
+       {isLoading ? (
+        <section className="py-16">
           <div className="container mx-auto px-4">
-            <h2 className="font-headline text-3xl font-bold text-center mb-12 text-foreground">
-              {t.latest_news_title}
+             <Skeleton className="h-10 w-1/2 mx-auto mb-12" />
+            <div className="grid md:grid-cols-3 gap-8">
+              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-96 w-full" />)}
+            </div>
+          </div>
+        </section>
+      ) : latestNews.length > 0 && (
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <h2 className="font-headline text-3xl font-bold text-center mb-12 text-foreground flex items-center justify-center">
+              <Newspaper className="h-8 w-8 mr-3 text-primary" /> {t.latest_news_title}
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
-              {latestArticles.map((article) => (
+              {latestNews.map((article) => (
                 <NewsCard key={article.id} article={article} />
               ))}
             </div>
             <div className="text-center mt-12">
               <Button size="lg" variant="outline" asChild className="button-hover">
-                <Link href="/articles">{t.view_all_news_button}</Link>
+                <Link href="/news">{t.view_all_news_button}</Link>
               </Button>
             </div>
           </div>

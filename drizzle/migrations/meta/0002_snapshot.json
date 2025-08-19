@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "95fa3934-b215-4a68-88b1-fb3c61eb5b7c",
-  "prevId": "56f75320-4887-44b6-aa32-ed5db21e9b5c",
+  "id": "203bdbe4-62cd-4967-a0fe-5b0e60cdca56",
+  "prevId": "fd626859-7355-4499-979a-d1885855200a",
   "tables": {
     "account": {
       "name": "account",
@@ -129,8 +129,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
@@ -155,16 +154,7 @@
           "default": "NOW()"
         }
       },
-      "indexes": {
-        "idx_bookmarkednewsarticle_user_news": {
-          "name": "idx_bookmarkednewsarticle_user_news",
-          "columns": [
-            "user_id",
-            "news_article_id"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "bookmarkednewsarticle_id": {
@@ -174,7 +164,15 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "idx_bookmarkednewsarticle_user_news": {
+          "name": "idx_bookmarkednewsarticle_user_news",
+          "columns": [
+            "user_id",
+            "news_article_id"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
     "bookmarkedproject": {
@@ -185,8 +183,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
@@ -361,8 +358,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "slug": {
           "name": "slug",
@@ -437,15 +433,7 @@
           "default": "NOW()"
         }
       },
-      "indexes": {
-        "idx_newsarticle_slug": {
-          "name": "idx_newsarticle_slug",
-          "columns": [
-            "slug"
-          ],
-          "isUnique": false
-        }
-      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
         "newsarticle_id": {
@@ -473,8 +461,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "content": {
           "name": "content",
@@ -487,7 +474,7 @@
           "name": "news_article_id",
           "type": "varchar(36)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "user_id": {
@@ -514,17 +501,35 @@
           "default": "NOW()"
         }
       },
-      "indexes": {
-        "idx_newscomment_user_news": {
-          "name": "idx_newscomment_user_news",
-          "columns": [
-            "user_id",
+      "indexes": {},
+      "foreignKeys": {
+        "newscomment_user_id_user_id_fk": {
+          "name": "newscomment_user_id_user_id_fk",
+          "tableFrom": "newscomment",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "newscomment_news_article_id_fk": {
+          "name": "newscomment_news_article_id_fk",
+          "tableFrom": "newscomment",
+          "tableTo": "newsarticle",
+          "columnsFrom": [
             "news_article_id"
           ],
-          "isUnique": true
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
-      "foreignKeys": {},
       "compositePrimaryKeys": {
         "newscomment_id": {
           "name": "newscomment_id",
@@ -544,8 +549,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "user_id": {
           "name": "user_id",
@@ -592,9 +596,134 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
+    "opportunity": {
+      "name": "opportunity",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category": {
+          "name": "category",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "imageUrl": {
+          "name": "imageUrl",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dataAiHint": {
+          "name": "dataAiHint",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "publishedDate": {
+          "name": "publishedDate",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "NOW()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "NOW()"
+        }
+      },
+      "indexes": {
+        "idx_opportunity_slug": {
+          "name": "idx_opportunity_slug",
+          "columns": [
+            "slug"
+          ],
+          "isUnique": false
+        },
+        "idx_opportunity_category": {
+          "name": "idx_opportunity_category",
+          "columns": [
+            "category"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "opportunity_id": {
+          "name": "opportunity_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "opportunity_slug_unique": {
+          "name": "opportunity_slug_unique",
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "checkConstraint": {}
+    },
     "passwordResetToken": {
       "name": "passwordResetToken",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "identifier": {
           "name": "identifier",
           "type": "varchar(255)",
@@ -635,7 +764,14 @@
         }
       },
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "passwordResetToken_id": {
+          "name": "passwordResetToken_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
@@ -735,14 +871,14 @@
         },
         "budget": {
           "name": "budget",
-          "type": "decimal(15,2)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
         "expenditure": {
           "name": "expenditure",
-          "type": "decimal(15,2)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -833,8 +969,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "slug": {
           "name": "slug",
@@ -1293,8 +1428,7 @@
           "type": "varchar(36)",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false,
-          "default": "UUID()"
+          "autoincrement": false
         },
         "title": {
           "name": "title",

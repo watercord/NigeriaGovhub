@@ -86,3 +86,14 @@ export type VideoFormData = {
   dataAiHint?: string | null;
   description?: string | null;
 };
+
+export type OpportunityFormData = {
+  title: string;
+  slug: string;
+  summary: string;
+  category: string;
+  publishedDate: Date;
+  content: string;
+  imageUrl?: string | null;
+  dataAiHint?: string | null;
+};
