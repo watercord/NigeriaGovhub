@@ -6,7 +6,7 @@ import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster";
 // import { SessionProvider } from 'next-auth/react';
 import { LanguageProvider } from "@/context/language-context";
-import { CustomSessionProvider } from "@/components/providers/session-provider"; // ✅ Use your wrapper
+import { CustomSessionProvider } from "@/components/providers/session-provider"; 
 
 export const metadata: Metadata = {
   title: "NigeriaGovHub - connecting Nigerians with Government Services",
@@ -34,10 +34,8 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen overflow-x-hidden">
         <LanguageProvider>
-          {/* ✅ FIXED: Use CustomSessionProvider to ensure session is available client-side */}
           <CustomSessionProvider>
             {" "}
-            {/* ✅ FIXED: Now valid client-side context */}
             <Suspense fallback={<header className="h-16" />}>
               <Header />
             </Suspense>

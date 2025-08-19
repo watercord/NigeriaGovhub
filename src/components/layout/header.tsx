@@ -375,7 +375,7 @@ const MobileNav = () => {
           </NavLink>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <NavLink href="/news" className="w-full">
+          <NavLink href="/articles" className="w-full">
             {t.articles || t.news}
           </NavLink>
         </DropdownMenuItem>
