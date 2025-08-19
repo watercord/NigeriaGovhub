@@ -1,34 +1,5 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "5",
-      "when": 1752607376011,
-      "tag": "0000_slimy_hitman",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1753444444271,
-      "tag": "0001_low_sir_ram",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1755595312301,
-      "tag": "0002_careful_lady_deathstrike",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1755601476399,
-      "tag": "0003_flashy_forge",
-      "breakpoints": true
-    }
-  ]
+  "entries": []
 }
