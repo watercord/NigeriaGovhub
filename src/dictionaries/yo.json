@@ -86,7 +86,7 @@
     "description": "Darapọ̀ mọ́ NigeriaGovHub láti mọ̀ àti láti kópa.",
     "has_account": "O ti ní àpamọ́ tẹ́lẹ̀?",
     "login_link": "Wọlé níbí",
-    "google_signup": "Forúkọsílẹ̀ pẹ̀lú Google",
+    "google_signup": "Forúkősílẹ̀ pẹ̀lú Google",
     "or_continue_with": "Tàbí ṣẹda àpamọ́ pẹ̀lú imeli",
     "name_label": "Orúkọ Kíkún",
     "email_label": "Adirẹsi imeli",
@@ -151,5 +151,20 @@
     "back_to_login": "Padà sí ojú-ewé ìwọlé",
     "success_title": "Àṣeyọrí",
     "error_title": "Aṣìṣe"
+  },
+  "search_page": {
+    "title": "Àwọn Èsì Ìwádìí",
+    "search_placeholder": "Wá àwọn iṣẹ́, àwọn àtẹjáde, àwọn iṣẹ́, àwọn aṣáyọrí...",
+    "search_button": "Wáà",
+    "all_filter": "Gbogbo rẹ",
+    "projects_filter": "Àwọn iṣẹ́",
+    "articles_filter": "Àwọn Àtẹjáde",
+    "services_filter": "Àwọn iṣẹ́",
+    "opportunities_filter": "Àwọn Aṣáyọrí",
+    "loading": "Ń wádìí...",
+    "no_results": "Kò sí àwọn èsì fún",
+    "recent_searches": "Àwọn Ìwádìí Tuntun",
+    "clear_history": "Pa Akọsílẹ̀ Re",
+    "start_searching": "Bẹrẹ̀ kíkọ̀ láti wá"
   }
 }

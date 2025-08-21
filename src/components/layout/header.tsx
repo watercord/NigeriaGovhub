@@ -193,16 +193,10 @@ export function Header() {
             label={"Explore"}
             items={[
               { href: "/projects", label: t.projects, icon: Briefcase },
-              { href: "/articles", label: t.articles, icon: Newspaper },
               {
                 href: "/site-feedback",
                 label: t.feedback,
                 icon: MessageSquare,
-              },
-              {
-                href: "/opportunities",
-                label: "Opportunities",
-                icon: Building,
               },
               { href: "/services", label: t.services, icon: Briefcase },
             ]}
@@ -213,23 +207,13 @@ export function Header() {
             label={t.govt_citizenship}
             items={governmentCitizenshipItems}
           />
+          <NavLink href="/articles" className="px-2">
+            {t.articles}
+          </NavLink>
+          <NavLink href="/opportunities" className="px-2">
+            Opportunities
+          </NavLink>
           {/* feedback moved into Explore dropdown to declutter header */}
-          <form onSubmit={handleSearch} className="flex items-center ml-4">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search opportunities..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 w-64 rounded-full"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            </div>
-            {/* <Button type="submit" variant="ghost" size="icon" className="ml-2">
-              <Search className="h-4 w-4" />
-              <span className="sr-only">Search</span>
-            </Button> */}
-          </form>
         </nav>
         <div className="flex items-center space-x-2">
           <LanguageToggle />
@@ -375,18 +359,8 @@ const MobileNav = () => {
           </NavLink>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <NavLink href="/articles" className="w-full">
-            {t.articles}
-          </NavLink>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
           <NavLink href="/site-feedback" className="w-full">
             {t.site_feedback}
-          </NavLink>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <NavLink href="/opportunities" className="w-full">
-            Opportunities
           </NavLink>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
@@ -442,27 +416,17 @@ const MobileNav = () => {
             {t.contact}
           </NavLink>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <NavLink href="/articles" className="w-full">
+            {t.articles}
+          </NavLink>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <NavLink href="/opportunities" className="w-full">
+            Opportunities
+          </NavLink>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <form onSubmit={handleSearch} className="px-2 py-1">
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Search opportunities..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full rounded-full"
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          </div>
-          <Button
-            type="submit"
-            variant="ghost"
-            size="sm"
-            className="w-full mt-2"
-          >
-            Search
-          </Button>
-        </form>
       </DropdownMenuContent>
     </DropdownMenu>
   );

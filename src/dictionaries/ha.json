@@ -151,5 +151,20 @@
     "back_to_login": "Koma shiga",
     "success_title": "Nasara",
     "error_title": "Kuskure"
+  },
+  "search_page": {
+    "title": "Sakamako na Bincike",
+    "search_placeholder": "Nemi ayyuka, makaloli, ayyukan, daman...",
+    "search_button": "Nema",
+    "all_filter": "Duka",
+    "projects_filter": "Ayyuka",
+    "articles_filter": "Makaloli",
+    "services_filter": "Ayyukan",
+    "opportunities_filter": "Dama",
+    "loading": "Ana bincike...",
+    "no_results": "Babu sakamako na nema",
+    "recent_searches": "Binciken da suka shafi",
+    "clear_history": "Share Tarihi",
+    "start_searching": "Fara rubutawa don bincike"
   }
 }

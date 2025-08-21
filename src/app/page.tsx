@@ -3,15 +3,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ArrowRight, CheckCircle, Eye, Newspaper, Server, PlayCircle, Briefcase, Search } from "lucide-react";
+import { ArrowRight, CheckCircle, Eye, Newspaper, Server, PlayCircle, Briefcase } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { getAllNewsArticles, getAllServices, getAllProjects, getAllVideosFromDb } from "@/lib/data";
 import { NewsCard } from "@/components/news/news-card";
 import { ServiceCard } from "@/components/services/service-card";
 import { VideoCard } from "@/components/common/video-card";
-import type { Project, NewsArticle, ServiceItem, Video } from "@/types/client";
+import { AdvancedSearchBar } from "@/components/common/advanced-search-bar";
+import type { Project, NewsArticle, ServiceItem, Video } from "@/types/server";
 import { useLanguage } from "@/context/language-context";
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -65,18 +65,9 @@ function HomePageContent() {
             {t.hero_subtitle}
           </p>
 
-          <form action="/projects" method="GET" className="mt-8 max-w-2xl mx-auto flex gap-2">
-            <Input
-                type="search"
-                name="search"
-                placeholder={t.search_placeholder}
-                className="flex-grow text-base p-6 bg-background"
-                aria-label="Search for projects"
-            />
-            <Button type="submit" size="lg" className="p-6 button-hover">
-                <Search className="h-5 w-5 mr-2" /> {t.search_button}
-            </Button>
-          </form>
+          <div className="mt-8">
+            <AdvancedSearchBar />
+          </div>
 
           <div className="space-x-4 mt-8">
             <Button size="lg" asChild className="button-hover shadow-md">

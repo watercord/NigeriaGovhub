@@ -151,5 +151,20 @@
     "back_to_login": "Laghachi na nbanye",
     "success_title": "Ọganihu",
     "error_title": "Njehie"
+  },
+  "search_page": {
+    "title": "Nsonaazụ nke Ọchọcha",
+    "search_placeholder": "Chọọ ọrụ, edemede, ọrụ, ogo...",
+    "search_button": "Chọọ",
+    "all_filter": "Niile",
+    "projects_filter": "Ọrụ",
+    "articles_filter": "Edemede",
+    "services_filter": "Ọrụ",
+    "opportunities_filter": "Ogo",
+    "loading": "Na-achọ...",
+    "no_results": "Enweghị nsonaazụ maka",
+    "recent_searches": "Ọchọcha Ndị Ọhụrụ",
+    "clear_history": "Kpochapụ Akụkọ",
+    "start_searching": "Malite ide iji chọọ"
   }
 }

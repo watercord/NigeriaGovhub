@@ -48,7 +48,7 @@
     "hero_subtitle": "Discover transparent insights into government projects and initiatives across all sectors. Track progress, understand impact, and engage with a new era of governance.",
     "search_placeholder": "Search for projects like 'Lagos-Ibadan Expressway'...",
     "search_button": "Search",
-    "explore_projects_button": "Explore All Projects",
+    "explore_projects_button": "Explore",
     "learn_more_button": "Learn More",
     "how_it_works_title": "Transparency at Your Fingertips",
     "discover_title": "Discover Projects",
@@ -156,5 +156,20 @@
     "back_to_login": "Back to login",
     "success_title": "Success",
     "error_title": "Error"
+  },
+  "search_page": {
+    "title": "Search Results",
+    "search_placeholder": "Search projects, articles, services, opportunities...",
+    "search_button": "Search",
+    "all_filter": "All",
+    "projects_filter": "Projects",
+    "articles_filter": "Articles",
+    "services_filter": "Services",
+    "opportunities_filter": "Opportunities",
+    "loading": "Searching...",
+    "no_results": "No results found for",
+    "recent_searches": "Recent Searches",
+    "clear_history": "Clear History",
+    "start_searching": "Start typing to search"
   }
 }
