@@ -78,7 +78,7 @@ export default async function NewsArticlePage({ params }: NewsArticlePageProps) 
   return (
     <div className="max-w-3xl mx-auto py-8 space-y-8">
       <Button variant="outline" asChild className="mb-4 button-hover">
-        <Link href="/news">
+        <Link href="/articles">
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to News
         </Link>
       </Button>
