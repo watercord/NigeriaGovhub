@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SearchResult {
   id: string;
+  slug?: string;
   title: string;
   subtitle?: string;
   summary?: string;
@@ -157,16 +158,17 @@ export function SearchClient() {
     }
   };
 
-  const getTypeLink = (type: string, id: string) => {
+  const getTypeLink = (type: string, id: string, slug?: string) => {
     switch (type) {
       case "project":
         return `/projects/${id}`;
       case "article":
-        return `/articles/${id}`;
+        return `/articles/${slug || id}`;
       case "service":
-        return `/services/${id}`;
+        // Services don't have individual pages, so we'll link to the main services page
+        return "/services";
       case "opportunity":
-        return `/opportunities/${id}`;
+        return `/opportunities/${slug || id}`;
       default:
         return "#";
     }
@@ -260,8 +262,8 @@ export function SearchClient() {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <CardTitle>
-                    <Link 
-                      href={getTypeLink(result.type, result.id)} 
+                    <Link
+                      href={getTypeLink(result.type, result.id, result.slug)}
                       className="hover:text-primary transition-colors"
                     >
                       {result.title}

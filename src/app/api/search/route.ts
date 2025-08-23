@@ -44,6 +44,7 @@ export async function GET(request: Request) {
         const articleResults = await db
           .select({
             id: newsarticle.id,
+            slug: newsarticle.slug,
             title: newsarticle.title,
             summary: newsarticle.summary,
             content: newsarticle.content,
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
         const serviceResults = await db
           .select({
             id: service.id,
+            slug: service.slug,
             title: service.title,
             summary: service.summary,
             type: sql`'service'`.as("type"),
@@ -94,6 +96,7 @@ export async function GET(request: Request) {
         const opportunityResults = await db
           .select({
             id: opportunity.id,
+            slug: opportunity.slug,
             title: opportunity.title,
             summary: opportunity.summary,
             content: opportunity.content,
