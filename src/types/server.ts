@@ -196,7 +196,7 @@ export const serviceFormSchemaRaw = {
   title: (z: any) => z.string().min(3, "Title must be at least 3 characters.").max(150),
   slug: (z: any) => z.string().min(3, "Slug must be at least 3 chars.").max(150)
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase alphanumeric with hyphens."),
-  summary: (z: any) => z.string().min(10, "Summary must be at least 10 characters.").max(500),
+  summary: (z: any) => z.string().min(10, "Summary must be at least 10 characters.").max(12000),
   category: (z: any) => z.string().min(2, "Category must be at least 2 characters.").max(50),
   link: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
   imageUrl: (z: any) => z.string().url("Must be a valid URL.").optional().or(z.literal('')).nullable(),
