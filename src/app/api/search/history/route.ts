@@ -6,7 +6,7 @@ const searchHistoryMap = new Map<string, string[]>();
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value || "anonymous";
     
     const history = searchHistoryMap.get(userId) || [];
@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { query } = await request.json();
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value || "anonymous";
     
     if (!query) {
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
 export async function DELETE() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value || "anonymous";
     
     searchHistoryMap.delete(userId);
